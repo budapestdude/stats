@@ -1,0 +1,19 @@
+{
+  "players": {
+    "processed": 622105,
+    "fileIndex": 212
+  },
+  "tournaments": {
+    "processed": 1499400,
+    "fileIndex": 212
+  },
+  "games": {
+    "processed": 2493267,
+    "fileIndex": 50
+  },
+  "openings": {
+    "processed": 0,
+    "fileIndex": 0
+  },
+  "indexesCreated": true
+}

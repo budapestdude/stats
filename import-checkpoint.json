@@ -1,0 +1,25 @@
+{
+  "players": {
+    "processed": 622105,
+    "total": 0,
+    "unique": {}
+  },
+  "events": {
+    "processed": 1496580,
+    "total": 0
+  },
+  "games": {
+    "processed": 0,
+    "total": 0
+  },
+  "openings": {
+    "processed": 0,
+    "total": 0
+  },
+  "lastCheckpoint": {
+    "playerFile": 212,
+    "eventFile": 210,
+    "gameFile": 0,
+    "openingFile": 0
+  }
+}
