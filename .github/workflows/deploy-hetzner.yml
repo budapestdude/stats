@@ -1,0 +1,74 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Deploy to Hetzner Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: root
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          script: |
+            # Navigate to app directory
+            cd /app/chess-stats
+
+            # Pull latest changes
+            git pull origin main || git pull origin master
+
+            # Install/update dependencies
+            npm install --production
+
+            # Build frontend if it exists
+            if [ -d "frontend" ]; then
+              cd frontend
+              npm install
+              npm run build
+              cd ..
+            fi
+
+            # Restart application
+            pm2 restart chess-stats || pm2 start ecosystem.config.js --env production
+
+            # Save PM2 configuration
+            pm2 save
+
+            # Optional: Run any database migrations
+            # node migrate.js || true
+
+            echo "Deployment completed successfully!"
+
+      - name: Check deployment health
+        run: |
+          sleep 10
+          response=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.HETZNER_HOST }}/health)
+          if [ $response -eq 200 ]; then
+            echo "✅ Deployment successful - Health check passed"
+          else
+            echo "❌ Health check failed with status code: $response"
+            exit 1
+          fi
+
+      - name: Notify deployment status (optional)
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Chess Stats deployment to Hetzner ${{ job.status }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Message: ${{ github.event.head_commit.message }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        continue-on-error: true
