@@ -1,14 +1,16 @@
 module.exports = {
   testEnvironment: 'node',
-  roots: ['<rootDir>/tests', '<rootDir>/src'],
+  roots: ['<rootDir>/tests'],
   testMatch: [
     '**/__tests__/**/*.js',
     '**/?(*.)+(spec|test).js'
   ],
   collectCoverageFrom: [
-    'src/**/*.js',
     'simple-server*.js',
-    '!src/swagger/**',
+    'routes/**/*.js',
+    'middleware/**/*.js',
+    'services/**/*.js',
+    'lib/**/*.js',
     '!**/node_modules/**',
     '!**/vendor/**',
     '!**/*.config.js'
@@ -28,9 +30,6 @@ module.exports = {
   verbose: true,
   bail: false,
   maxWorkers: '50%',
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1'
-  },
   transformIgnorePatterns: [
     'node_modules/(?!(p-queue|p-timeout|p-defer)/)'
   ]
