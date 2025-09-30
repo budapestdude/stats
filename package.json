@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "dev:simple": "nodemon src/server-simple.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd frontend && npm start",
+    "build:backend": "tsc",
+    "start:backend": "node dist/server.js",
     "start:simple": "ts-node src/server-simple.ts",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts",
