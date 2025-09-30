@@ -1,15 +1,20 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { 
-  CacheManager, 
-  apiCache, 
-  playerCache, 
-  gameCache, 
+import {
+  CacheManager,
+  apiCache,
+  playerCache,
+  gameCache,
   staticDataCache,
   cachedFetch,
   CacheKeys
 } from '@/lib/cache';
+
+// API base URL - hardcoded for Railway deployment
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? 'http://195.201.6.244'
+  : 'http://localhost:3007';
 
 interface CacheStats {
   api: ReturnType<typeof apiCache.getStats>;
@@ -95,7 +100,7 @@ export function CacheProvider({ children }: CacheProviderProps) {
     return cachedFetch(
       CacheKeys.player(username),
       async () => {
-        const response = await fetch(`/api/players/${username}`);
+        const response = await fetch(`${API_BASE_URL}/api/players/${username}`);
         if (!response.ok) throw new Error('Failed to fetch player');
         return response.json();
       },
@@ -107,7 +112,7 @@ export function CacheProvider({ children }: CacheProviderProps) {
     return cachedFetch(
       CacheKeys.topPlayers(),
       async () => {
-        const response = await fetch('/api/players/top');
+        const response = await fetch(`${API_BASE_URL}/api/players/top`);
         if (!response.ok) throw new Error('Failed to fetch top players');
         return response.json();
       },
@@ -119,7 +124,7 @@ export function CacheProvider({ children }: CacheProviderProps) {
     return cachedFetch(
       CacheKeys.openings(),
       async () => {
-        const response = await fetch('/api/openings');
+        const response = await fetch(`${API_BASE_URL}/api/openings`);
         if (!response.ok) throw new Error('Failed to fetch openings');
         return response.json();
       },
