@@ -19,14 +19,10 @@ const nextConfig = {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://195.201.6.244/api',
   },
 
-  // Fix the API rewrite to use correct port
+  // API rewrites disabled for Railway deployment (backend on separate Hetzner server)
+  // Frontend will call API directly using NEXT_PUBLIC_API_URL
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:3007/api/:path*', // Fixed port from 3005 to 3007
-      },
-    ];
+    return [];
   },
 
   // Enable SWC minification
