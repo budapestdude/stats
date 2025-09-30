@@ -1,5 +1,10 @@
 'use client';
 
+// API base URL - hardcoded for Railway deployment
+const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? 'http://195.201.6.244'
+  : 'http://localhost:3007';
+
 // Frontend caching service for Chess Stats
 interface CacheItem<T> {
   data: T;
@@ -325,11 +330,11 @@ export const CacheManager = {
   async preloadData() {
     const preloadTasks = [
       cachedFetch(CacheKeys.openings(), async () => {
-        const response = await fetch('/api/openings');
+        const response = await fetch(`${API_BASE_URL}/api/openings`);
         return response.json();
       }, staticDataCache),
       cachedFetch(CacheKeys.topPlayers(), async () => {
-        const response = await fetch('/api/players/top');
+        const response = await fetch(`${API_BASE_URL}/api/players/top`);
         return response.json();
       }, playerCache)
     ];
