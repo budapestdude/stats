@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  html {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #f9fafb;
+    color: #111827;
+  }
+}
+
+/* Custom chess styles */
+.chess-board-dark {
+  background-color: #769656;
+}
+
+.chess-board-light {
+  background-color: #eeeed2;
+}
+
+/* Force important styles for debugging */
+.debug-bg {
+  background-color: #ef4444 !important;
+}
+
+.debug-text {
+  color: #ffffff !important;
+  font-weight: bold !important;
+}
