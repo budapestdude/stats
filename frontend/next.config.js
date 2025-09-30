@@ -13,6 +13,12 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
+  // Environment variables
+  env: {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244',
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://195.201.6.244/api',
+  },
+
   // Fix the API rewrite to use correct port
   async rewrites() {
     return [
