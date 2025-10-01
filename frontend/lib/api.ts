@@ -214,28 +214,26 @@ export const statsApi = {
 };
 
 // Simple fetch functions for use with React Query
-const API_URL = 'http://localhost:3005';
-
 export async function fetchStatsOverview() {
-  const response = await fetch(`${API_URL}/api/stats/overview`);
+  const response = await fetch(`${API_BASE_URL}/api/stats/overview`);
   if (!response.ok) throw new Error('Failed to fetch stats');
   return response.json();
 }
 
 export async function fetchTopPlayers() {
-  const response = await fetch(`${API_URL}/api/players/top`);
+  const response = await fetch(`${API_BASE_URL}/api/players/top`);
   if (!response.ok) throw new Error('Failed to fetch top players');
   return response.json();
 }
 
 export async function fetchPlayerProfile(username: string) {
-  const response = await fetch(`${API_URL}/api/players/${username}`);
+  const response = await fetch(`${API_BASE_URL}/api/players/${username}`);
   if (!response.ok) throw new Error('Failed to fetch player profile');
   return response.json();
 }
 
 export async function fetchPlayers() {
-  const response = await fetch(`${API_URL}/api/players`);
+  const response = await fetch(`${API_BASE_URL}/api/players`);
   if (!response.ok) throw new Error('Failed to fetch players');
   return response.json();
 }
