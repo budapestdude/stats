@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, Database, TrendingUp, Users, BookOpen, Calendar, Filter, Download, ChevronRight, Trophy, Target, Activity, RefreshCw, FileText, BarChart3, Eye, ExternalLink, Clock, Globe, Star, Zap, Shield, Award } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3007';
+import { API_BASE_URL } from '@/lib/config';
 
 interface Game {
   id?: number;

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Trophy, Target, TrendingUp, Award, Users, BookOpen, Calendar, Zap, Shield, Swords } from 'lucide-react';
 import { OpponentStats } from '@/components/OpponentStats';
+import { API_BASE_URL } from '@/lib/config';
 
 export default function MagnusCarlsenProfile() {
   const [data, setData] = useState<any>(null);
@@ -16,7 +17,7 @@ export default function MagnusCarlsenProfile() {
 
   const fetchPlayerData = async () => {
     try {
-      const response = await fetch('http://localhost:3007/api/players/magnus-carlsen/stats');
+      const response = await fetch(`${API_BASE_URL}/api/players/magnus-carlsen/stats`);
       if (response.ok) {
         const result = await response.json();
         setData(result);

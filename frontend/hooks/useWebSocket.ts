@@ -37,7 +37,7 @@ export function useWebSocket(serverPath?: string) {
   const [lastError, setLastError] = useState<string | null>(null);
 
   useEffect(() => {
-    const socketUrl = serverPath || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3007';
+    const socketUrl = serverPath || process.env.NEXT_PUBLIC_API_URL || `${API_BASE_URL}`;
     
     // Initialize socket connection
     socket.current = io(socketUrl, {

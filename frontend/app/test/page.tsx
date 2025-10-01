@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3007';
+import { API_BASE_URL } from '@/lib/config';
 
 export default function TestPage() {
   const [response, setResponse] = useState<any>(null);

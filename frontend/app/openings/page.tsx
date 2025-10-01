@@ -42,7 +42,7 @@ interface ExplorerData {
   topGames?: any[];
 }
 
-const API_BASE_URL = 'http://localhost:3007';
+import { API_BASE_URL } from '@/lib/config';
 
 export default function OpeningsPage() {
   const [selectedOpening, setSelectedOpening] = useState(OPENINGS[0]);

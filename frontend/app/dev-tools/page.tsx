@@ -15,7 +15,7 @@ export default function DeveloperToolsPage() {
   const [connectionLoading, setConnectionLoading] = useState(false);
 
   // API Test State
-  const [apiUrl, setApiUrl] = useState('http://localhost:3007');
+  const [apiUrl, setApiUrl] = useState(`${API_BASE_URL}`);
   const [testResults, setTestResults] = useState<any>({});
   const [apiLoading, setApiLoading] = useState(false);
 

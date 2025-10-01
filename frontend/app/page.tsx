@@ -127,7 +127,7 @@ interface OverviewStats {
   };
 }
 
-const API_BASE_URL = 'http://localhost:3007';
+import { API_BASE_URL } from '@/lib/config';
 
 export default function HomePage() {
   const { isAuthenticated } = useAuth();

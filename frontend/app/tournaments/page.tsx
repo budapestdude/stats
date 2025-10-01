@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Trophy, Search, TrendingUp, Calendar, Users, Clock, MapPin, ChevronLeft, ChevronRight, Filter, Grid, List } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3007';
+import { API_BASE_URL } from '@/lib/config';
 
 interface Tournament {
   id?: number;

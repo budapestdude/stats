@@ -7,7 +7,7 @@ import Link from 'next/link';
 import ChessBoard from '@/components/ChessBoard';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3007';
+import { API_BASE_URL } from '@/lib/config';
 
 export default function GamesPage() {
   const [filters, setFilters] = useState({

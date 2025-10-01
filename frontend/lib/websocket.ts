@@ -89,7 +89,7 @@ class WebSocketService {
       const user = await authService.getCurrentUser();
       const token = authService.getToken();
 
-      this.socket = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3007', {
+      this.socket = io(process.env.NEXT_PUBLIC_WS_URL || `${API_BASE_URL}`, {
         auth: {
           token: token,
           userId: user?.id

@@ -5,7 +5,7 @@ import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, R
 import { Calendar, TrendingUp, Award, Users, BookOpen, Activity, Database, Clock, Target, Zap, BarChart3, Globe, Trophy, Percent, Hash, RefreshCw, Filter, Download, Share } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3007';
+import { API_BASE_URL } from '@/lib/config';
 
 interface StatisticsData {
   overview: any;
