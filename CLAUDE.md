@@ -19,6 +19,9 @@ Chess Stats is a comprehensive web application for chess statistics, player anal
 ```bash
 # Start both backend and frontend servers (legacy)
 ./start-dev.bat
+
+# Start improved development servers
+./start-dev.ps1
 ```
 
 ### Production-Ready Servers (Recommended)
@@ -31,6 +34,9 @@ node simple-server-pooled.js
 
 # Original legacy server (port 3007)
 node simple-server.js
+
+# Production server (default port 3007 or configured)
+node production-server.js
 ```
 
 ### Docker Deployment (Production-Ready)
@@ -44,6 +50,18 @@ docker-compose --profile dev up -d
 # Automated deployment script
 ./deploy.sh production    # Deploy to production
 ./deploy.sh development   # Deploy to dev with all servers
+```
+
+### Hetzner Production Deployment
+```bash
+# Deploy to Hetzner VPS (production)
+./hetzner-deploy.sh
+
+# Automated setup for new server
+./setup-auto-deploy.sh
+
+# Check deployment status
+ssh root@YOUR_SERVER_IP "systemctl status chess-stats"
 ```
 
 ### Backend Server Options
@@ -192,6 +210,13 @@ The application provides three optimized servers:
   - Opening explorer with position analysis
   - Top players by variant
 
+### Frontend API Configuration
+The frontend can be configured to use different backend servers:
+- **Development**: Uses `http://localhost:3007` (or 3009/3010) via Next.js rewrites
+- **Production (Railway)**: Frontend deployed on Railway, calls Hetzner API directly (configured via NEXT_PUBLIC_API_URL)
+- **Production (Hetzner)**: Both frontend and backend on same server
+- API URLs configured in `frontend/app/lib/cache.ts` and `frontend/app/contexts/CacheContext.tsx`
+
 ## Frontend Structure
 
 Next.js 15 App Router pages:
@@ -298,8 +323,10 @@ curl http://localhost:3010/api/stats/database
 - `/test` - Main API testing interface
 - `/api-test` - Comprehensive endpoint testing
 - `/real-data-test` - Live data validation
-- `/cache-monitor` - Cache monitoring interface
+- `/cache-monitor` - Cache monitoring interface (React Query cache inspection)
 - `/dev-tools` - Development tools
+- `/websocket-test` - WebSocket connection testing
+- `/debug` - Debug information and environment
 
 ### Test Structure & Requirements
 - **Unit tests**: In `tests/unit/` for individual functions
@@ -332,10 +359,13 @@ curl http://localhost:3010/api/stats/database
 ### Frontend
 - TypeScript for all components
 - Tailwind CSS for styling with custom utilities in `lib/utils.ts`
-- React Query for data fetching
+- React Query (@tanstack/react-query) for data fetching and caching
+  - Configured with CacheContext in `frontend/app/contexts/CacheContext.tsx`
+  - Preloading strategy in `frontend/app/lib/cache.ts`
 - Chess.js library for move validation
 - react-chessboard for board visualization
 - Components should be functional with hooks
+- Next.js 15 App Router with React 19 Server Components where applicable
 
 ### Data Processing
 - OTB database scripts use Node.js with SQLite
@@ -364,8 +394,34 @@ curl http://localhost:3010/api/stats/database
 ### Key Dependencies
 - **express**: Web framework
 - **axios**: HTTP client for API calls
-- **sqlite3**: Database for OTB games
+- **sqlite3**: Database for OTB games (complete-tournaments.db)
 - **chess.js**: Chess move validation and logic
 - **react-chessboard**: Chess board visualization
 - **@tanstack/react-query**: Data fetching and caching
 - **p-queue**: Queue management for rate limiting
+- **winston**: Logging (src/utils/logger.js)
+- **recharts**: Data visualization charts
+- **lucide-react**: Icon library
+
+## Deployment Architecture
+
+### Production Environment (Hetzner VPS)
+- **Frontend**: Next.js deployed on Railway (https://your-app.railway.app)
+- **Backend**: Node.js server on Hetzner VPS (http://195.201.6.244:3007)
+- **Database**: SQLite database on Hetzner server (9.1M+ games)
+- **Configuration**: Frontend makes direct API calls to Hetzner backend
+
+### Deployment Files
+- `deploy.sh` - Automated Docker deployment script
+- `hetzner-deploy.sh` - Direct deployment to Hetzner VPS
+- `setup-auto-deploy.sh` - Configure GitHub Actions auto-deployment
+- `Dockerfile` - Multi-stage Docker build
+- `docker-compose.yml` - Production container orchestration
+- `.github/workflows/` - CI/CD pipeline (if configured)
+
+### Railway Deployment
+Frontend is deployed on Railway with:
+- Environment variable `NEXT_PUBLIC_API_URL` pointing to Hetzner backend
+- Build command: `npm run build`
+- Start command: `npm start`
+- No backend API routes (frontend calls Hetzner directly)

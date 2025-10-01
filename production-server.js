@@ -144,11 +144,50 @@ app.get('/api/players/:username', async (req, res) => {
         });
         res.json(response.data);
     } catch (error) {
-        res.status(error.response?.status || 500).json({ 
+        res.status(error.response?.status || 500).json({
             error: 'Failed to fetch player data',
-            message: error.message 
+            message: error.message
         });
     }
+});
+
+// Statistics endpoints (placeholder until database is available)
+app.get('/api/stats/overview', (req, res) => {
+    res.json({
+        totalGames: 'Loading...',
+        totalPlayers: 'Loading...',
+        totalTournaments: 'Loading...',
+        message: 'Database is being uploaded. Full statistics will be available soon.',
+        estimatedCompletion: '10-15 minutes'
+    });
+});
+
+app.get('/api/stats/activity', (req, res) => {
+    res.json({
+        message: 'Database loading',
+        data: []
+    });
+});
+
+app.get('/api/stats/rating-distribution', (req, res) => {
+    res.json({
+        message: 'Database loading',
+        distribution: []
+    });
+});
+
+app.get('/api/stats/leaderboards', (req, res) => {
+    res.json({
+        message: 'Database loading',
+        players: []
+    });
+});
+
+app.get('/api/stats/openings', (req, res) => {
+    res.json({
+        message: 'Database loading',
+        openings: []
+    });
 });
 
 // 404 handler

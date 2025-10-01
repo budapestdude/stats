@@ -3,7 +3,7 @@
 // API base URL - hardcoded for Railway deployment
 const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   ? 'http://195.201.6.244'
-  : 'http://localhost:3007';
+  : 'http://localhost:3010';
 
 // Frontend caching service for Chess Stats
 interface CacheItem<T> {

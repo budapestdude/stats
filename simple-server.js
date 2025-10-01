@@ -21,8 +21,13 @@ const USER_AGENT = 'Chess-Stats-Website/1.0 (contact: chessstats@example.com; pu
 
 app.use(cors({
   origin: function(origin, callback) {
-    // Allow any localhost port
-    if (!origin || origin.startsWith('http://localhost:')) {
+    const allowedOrigins = [
+      'http://localhost:',
+      'http://195.201.6.244',
+      'https://195.201.6.244',
+      'https://chess-stats-production.up.railway.app'
+    ];
+    if (!origin || allowedOrigins.some(allowed => origin.startsWith(allowed))) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
