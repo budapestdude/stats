@@ -1,9 +1,30 @@
 'use client';
 
-// API base URL - hardcoded for Railway deployment
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'http://195.201.6.244'
-  : 'http://localhost:3010';
+// API base URL - uses environment variable at build time or runtime detection
+const getApiBaseUrl = () => {
+  // Server-side rendering
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244';
+  }
+
+  // Client-side: check if on localhost
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:3010';
+  }
+
+  // Production: use environment variable or default to Hetzner
+  return process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Debug: Log the API URL being used (only in browser)
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  console.log('[Cache] API_BASE_URL:', API_BASE_URL);
+  console.log('[Cache] NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+  console.log('[Cache] hostname:', window.location.hostname);
+}
 
 // Frontend caching service for Chess Stats
 interface CacheItem<T> {

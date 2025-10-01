@@ -1,9 +1,23 @@
 import axios from 'axios';
 
-// Hardcoded for Railway deployment - backend runs on Hetzner
-const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  ? 'http://195.201.6.244'
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010');
+// API base URL - uses environment variable at build time or runtime detection
+const getApiBaseUrl = () => {
+  // Server-side rendering
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244';
+  }
+
+  // Client-side: check if on localhost
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:3010';
+  }
+
+  // Production: use environment variable or default to Hetzner
+  return process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
