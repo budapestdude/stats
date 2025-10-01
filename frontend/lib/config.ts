@@ -1,34 +1,39 @@
 // Central API configuration for Chess Stats
-// This file provides a consistent API URL across the entire application
+
+// The environment variable embedded at build time by Next.js
+const BUILD_TIME_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244';
 
 /**
- * Get the API base URL based on the environment
- * - Server-side: Uses NEXT_PUBLIC_API_URL or defaults to Hetzner
- * - Client-side localhost: Uses localhost:3010
- * - Client-side production: Uses NEXT_PUBLIC_API_URL or defaults to Hetzner
+ * Get the API base URL - ALWAYS use this function, never a constant!
+ * This is evaluated at runtime to detect localhost vs production
  */
 export function getApiBaseUrl(): string {
-  // Server-side rendering (build time)
-  if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244';
+  // Browser runtime check
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+
+    // Local development - use localhost:3010
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:3010';
+    }
+
+    // Production - use environment variable (Railway sets this)
+    return BUILD_TIME_API_URL;
   }
 
-  // Client-side: check if on localhost
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:3010';
-  }
-
-  // Production: use environment variable or default to Hetzner
-  return process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244';
+  // Server-side rendering
+  return BUILD_TIME_API_URL;
 }
 
-// Export the API base URL as a constant
+// Export a constant that calls the function (for backward compatibility)
+// NOTE: In string templates, you must use getApiBaseUrl() directly!
 export const API_BASE_URL = getApiBaseUrl();
 
-// Debug logging (only in development)
-if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-  console.log('[Config] API_BASE_URL:', API_BASE_URL);
-  console.log('[Config] NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-  console.log('[Config] hostname:', window.location.hostname);
+// Debug logging
+if (typeof window !== 'undefined') {
+  const url = getApiBaseUrl();
+  console.log('[Config] API URL Configuration:');
+  console.log('  BUILD_TIME_API_URL:', BUILD_TIME_API_URL);
+  console.log('  Current hostname:', window.location.hostname);
+  console.log('  Selected API URL:', url);
 }
