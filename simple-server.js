@@ -19,6 +19,58 @@ const LICHESS_API = 'https://lichess.org/api';
 // Proper User-Agent header as required by Chess.com API terms
 const USER_AGENT = 'Chess-Stats-Website/1.0 (contact: chessstats@example.com; purpose: educational)';
 
+// Helper function for API calls with retry logic and rate limiting
+async function fetchWithRetry(url, options = {}, retries = 3) {
+  let lastError;
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await axios.get(url, options);
+
+      // Validate response
+      if (!response.data) {
+        throw new Error('Invalid API response: empty data');
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error;
+
+      // Handle rate limiting (429)
+      if (error.response?.status === 429) {
+        const retryAfter = parseInt(error.response.headers['retry-after'] || '60', 10);
+        console.warn(`Rate limited. Retrying after ${retryAfter}s...`);
+        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+        continue;
+      }
+
+      // Handle server errors (500-599) with exponential backoff
+      if (error.response?.status >= 500 && attempt < retries - 1) {
+        const backoffTime = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+        console.warn(`Server error. Retrying in ${backoffTime}ms... (attempt ${attempt + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+        continue;
+      }
+
+      // Don't retry client errors (400-499, except 429)
+      if (error.response?.status >= 400 && error.response?.status < 500) {
+        throw error;
+      }
+
+      // Network errors - retry with backoff
+      if (attempt < retries - 1) {
+        const backoffTime = Math.pow(2, attempt) * 1000;
+        console.warn(`Network error. Retrying in ${backoffTime}ms... (attempt ${attempt + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+        continue;
+      }
+    }
+  }
+
+  console.error(`API request failed after ${retries} attempts:`, lastError.message);
+  throw lastError;
+}
+
 app.use(cors({
   origin: function(origin, callback) {
     const allowedOrigins = [
@@ -784,9 +836,9 @@ app.get('/api/stats/countries', (req, res) => {
 app.get('/api/players/top', async (req, res) => {
   try {
     const { category = 'blitz', limit = 10 } = req.query;
-    
-    // Fetch leaderboards data
-    const response = await axios.get(`${CHESS_COM_API}/leaderboards`, {
+
+    // Fetch leaderboards data with retry logic
+    const response = await fetchWithRetry(`${CHESS_COM_API}/leaderboards`, {
       headers: { 'User-Agent': USER_AGENT }
     });
     
@@ -1100,12 +1152,12 @@ app.get('/api/players/search', async (req, res) => {
   }
   
   try {
-    // Search Chess.com for the player (exact match)
-    const response = await axios.get(`${CHESS_COM_API}/player/${q}`, {
+    // Search Chess.com for the player (exact match) with retry logic
+    const response = await fetchWithRetry(`${CHESS_COM_API}/player/${q}`, {
       headers: { 'User-Agent': USER_AGENT }
     });
     
-    const statsResponse = await axios.get(`${CHESS_COM_API}/player/${q}/stats`, {
+    const statsResponse = await fetchWithRetry(`${CHESS_COM_API}/player/${q}/stats`, {
       headers: { 'User-Agent': USER_AGENT }
     });
     
@@ -1142,12 +1194,155 @@ app.get('/api/players/search', async (req, res) => {
   }
 });
 
+// Get player opening statistics from recent games
+app.get('/api/players/:username/openings', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { limit = 100, timeClass = 'all' } = req.query;
+
+    // Get list of available archives with retry
+    const archivesResponse = await fetchWithRetry(
+      `${CHESS_COM_API}/player/${username}/games/archives`,
+      { headers: { 'User-Agent': USER_AGENT } }
+    );
+
+    const archives = archivesResponse.data.archives || [];
+    const recentArchives = archives.slice(-3); // Last 3 months
+
+    // Fetch games from recent archives with retry
+    const gamesPromises = recentArchives.map(archiveUrl =>
+      fetchWithRetry(archiveUrl, { headers: { 'User-Agent': USER_AGENT } })
+        .catch(err => ({ data: { games: [] } }))
+    );
+
+    const archiveResponses = await Promise.all(gamesPromises);
+    let allGames = [];
+
+    archiveResponses.forEach(response => {
+      if (response.data && response.data.games) {
+        allGames.push(...response.data.games);
+      }
+    });
+
+    // Filter by time class if specified
+    if (timeClass !== 'all') {
+      allGames = allGames.filter(game => game.time_class === timeClass);
+    }
+
+    // Limit number of games analyzed
+    allGames = allGames.slice(-parseInt(limit));
+
+    // Analyze openings
+    const openingStats = {};
+    const whiteOpenings = {};
+    const blackOpenings = {};
+
+    allGames.forEach(game => {
+      const eco = game.eco || 'Unknown';
+      const opening = game.pgn?.match(/\[ECOUrl "https:\/\/www\.chess\.com\/openings\/([^"]+)"\]/)?.[1] ||
+                      game.pgn?.match(/\[Opening "([^"]+)"\]/)?.[1] ||
+                      'Unknown';
+
+      const isWhite = game.white.username.toLowerCase() === username.toLowerCase();
+      const isBlack = game.black.username.toLowerCase() === username.toLowerCase();
+
+      // Overall stats
+      if (!openingStats[eco]) {
+        openingStats[eco] = {
+          eco,
+          name: opening,
+          games: 0,
+          wins: 0,
+          draws: 0,
+          losses: 0,
+          whiteGames: 0,
+          blackGames: 0
+        };
+      }
+
+      openingStats[eco].games++;
+
+      if (isWhite) {
+        openingStats[eco].whiteGames++;
+        if (game.white.result === 'win') openingStats[eco].wins++;
+        else if (game.white.result === 'draw') openingStats[eco].draws++;
+        else openingStats[eco].losses++;
+
+        if (!whiteOpenings[eco]) {
+          whiteOpenings[eco] = { eco, name: opening, games: 0, wins: 0, draws: 0, losses: 0 };
+        }
+        whiteOpenings[eco].games++;
+        if (game.white.result === 'win') whiteOpenings[eco].wins++;
+        else if (game.white.result === 'draw') whiteOpenings[eco].draws++;
+        else whiteOpenings[eco].losses++;
+      }
+
+      if (isBlack) {
+        openingStats[eco].blackGames++;
+        if (game.black.result === 'win') openingStats[eco].wins++;
+        else if (game.black.result === 'draw') openingStats[eco].draws++;
+        else openingStats[eco].losses++;
+
+        if (!blackOpenings[eco]) {
+          blackOpenings[eco] = { eco, name: opening, games: 0, wins: 0, draws: 0, losses: 0 };
+        }
+        blackOpenings[eco].games++;
+        if (game.black.result === 'win') blackOpenings[eco].wins++;
+        else if (game.black.result === 'draw') blackOpenings[eco].draws++;
+        else blackOpenings[eco].losses++;
+      }
+    });
+
+    // Calculate win rates and sort
+    const calculateWinRate = (stats) => ({
+      ...stats,
+      winRate: stats.games > 0 ? ((stats.wins / stats.games) * 100).toFixed(1) : '0.0',
+      drawRate: stats.games > 0 ? ((stats.draws / stats.games) * 100).toFixed(1) : '0.0',
+      performance: stats.games > 0 ? (((stats.wins + stats.draws * 0.5) / stats.games) * 100).toFixed(1) : '0.0'
+    });
+
+    const overallOpenings = Object.values(openingStats)
+      .map(calculateWinRate)
+      .sort((a, b) => b.games - a.games);
+
+    const whiteOpeningsList = Object.values(whiteOpenings)
+      .map(calculateWinRate)
+      .sort((a, b) => b.games - a.games);
+
+    const blackOpeningsList = Object.values(blackOpenings)
+      .map(calculateWinRate)
+      .sort((a, b) => b.games - a.games);
+
+    res.json({
+      username,
+      totalGames: allGames.length,
+      timeClass,
+      overall: overallOpenings,
+      asWhite: whiteOpeningsList,
+      asBlack: blackOpeningsList,
+      summary: {
+        totalOpenings: overallOpenings.length,
+        mostPlayedOpening: overallOpenings[0] || null,
+        bestPerformingOpening: [...overallOpenings].sort((a, b) =>
+          parseFloat(b.performance) - parseFloat(a.performance)
+        )[0] || null
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching player openings:', error.message);
+    res.status(500).json({
+      error: 'Failed to fetch player opening statistics',
+      message: error.message
+    });
+  }
+});
+
 // Get player game archives from Chess.com
 app.get('/api/players/:username/games/archives', async (req, res) => {
   try {
     const { username } = req.params;
     const { limit = 5 } = req.query; // Get last N months
-    
+
     // Get list of available archives
     const archivesResponse = await axios.get(
       `${CHESS_COM_API}/player/${username}/games/archives`,
@@ -1222,19 +1417,24 @@ function extractOpening(pgn) {
 app.get('/api/players/:username', async (req, res) => {
   try {
     const { username } = req.params;
-    
-    // Fetch player profile and stats
+
+    // Fetch player profile and stats with retry logic
     const [profileResponse, statsResponse] = await Promise.all([
-      axios.get(`${CHESS_COM_API}/player/${username}`, {
+      fetchWithRetry(`${CHESS_COM_API}/player/${username}`, {
         headers: { 'User-Agent': USER_AGENT }
       }),
-      axios.get(`${CHESS_COM_API}/player/${username}/stats`, {
+      fetchWithRetry(`${CHESS_COM_API}/player/${username}/stats`, {
         headers: { 'User-Agent': USER_AGENT }
       })
     ]);
-    
+
     const profile = profileResponse.data;
     const stats = statsResponse.data;
+
+    // Validate response data
+    if (!profile.username) {
+      throw new Error('Invalid player data: missing username');
+    }
     
     // Format the response
     const playerData = {
