@@ -25,9 +25,6 @@ const nextConfig = {
     return [];
   },
 
-  // Enable SWC minification
-  swcMinify: true,
-
   // Optimize images
   images: {
     domains: ['images.chesscomfiles.com', 'lichess1.org'],
