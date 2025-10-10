@@ -91,11 +91,13 @@ app.use(cors({
 app.use(express.json());
 
 // Connect to SQLite databases
-let db = null; // Main database with 9.1M games
+let db = null; // Main database
 let movesDb = null; // Smaller database with moves
 
-// Use the complete database with 9.1M games for metadata
-const dbPath = path.join(__dirname, 'otb-database', 'complete-tournaments.db');
+// Use Railway subset database (500k games) for deployment, or full database if available
+const railwayDbPath = path.join(__dirname, 'otb-database', 'railway-subset.db');
+const fullDbPath = path.join(__dirname, 'otb-database', 'complete-tournaments.db');
+const dbPath = fs.existsSync(railwayDbPath) ? railwayDbPath : fullDbPath;
 const movesDbPath = path.join(__dirname, 'chess-stats.db');
 
 // Connect to main database

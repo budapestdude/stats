@@ -6,6 +6,9 @@ otb-database/chess-stats-10m.db
 otb-database/*.db-wal
 otb-database/*.db-shm
 
+# ALLOW railway-subset.db for deployment
+!otb-database/railway-subset.db
+
 # PGN source files
 otb-database/pgn-files/
 LumbrasGigaBase_OTB_2025/
