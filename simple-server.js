@@ -12,7 +12,7 @@ const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
-const PORT = 3007;
+const PORT = process.env.PORT || 3007; // Use Railway's PORT or default to 3007
 const CHESS_COM_API = 'https://api.chess.com/pub';
 const LICHESS_API = 'https://lichess.org/api';
 
@@ -77,9 +77,10 @@ app.use(cors({
       'http://localhost:',
       'http://195.201.6.244',
       'https://195.201.6.244',
-      'https://chess-stats-production.up.railway.app'
+      'https://chess-stats-production.up.railway.app',
+      '.railway.app' // Allow all Railway apps
     ];
-    if (!origin || allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+    if (!origin || allowedOrigins.some(allowed => origin.includes(allowed))) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
