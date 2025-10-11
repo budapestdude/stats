@@ -328,6 +328,45 @@ app.get('/api/stats/rating-distribution', (req, res) => {
   });
 });
 
+// Get popular openings from database
+app.get('/api/openings', async (req, res) => {
+  if (!db) {
+    return res.json([
+      { eco: 'C50', name: 'Italian Game', games: 1234, whiteWins: 45, draws: 30, blackWins: 25 },
+      { eco: 'B12', name: 'Caro-Kann Defense', games: 987, whiteWins: 42, draws: 35, blackWins: 23 },
+      { eco: 'C42', name: 'Petrov Defense', games: 856, whiteWins: 41, draws: 38, blackWins: 21 },
+    ]);
+  }
+
+  try {
+    const query = `
+      SELECT
+        ECO as eco,
+        Opening as name,
+        COUNT(*) as games,
+        ROUND(SUM(CASE WHEN Result = '1-0' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as whiteWins,
+        ROUND(SUM(CASE WHEN Result = '1/2-1/2' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as draws,
+        ROUND(SUM(CASE WHEN Result = '0-1' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as blackWins
+      FROM games
+      WHERE ECO IS NOT NULL AND Opening IS NOT NULL
+      GROUP BY ECO, Opening
+      ORDER BY games DESC
+      LIMIT 50
+    `;
+
+    db.all(query, [], (err, rows) => {
+      if (err) {
+        console.error('Error fetching openings:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      res.json(rows || []);
+    });
+  } catch (error) {
+    console.error('Error in /api/openings:', error);
+    res.status(500).json({ error: 'Failed to fetch openings' });
+  }
+});
+
 // Lichess Opening Explorer - Real data!
 app.get('/api/openings/explorer', async (req, res) => {
   try {
