@@ -3,14 +3,21 @@ const cors = require('cors');
 const axios = require('axios');
 const path = require('path');
 const multer = require('multer');
-const OTBDatabaseManager = require('./otb-database/download-manager');
-// Server reloaded
-const PGNParser = require('./otb-database/pgn-parser');
-const GameMovesLoader = require('./otb-database/game-moves-loader');
-const AdvancedChessAnalyzer = require('./otb-database/advanced-analyzer');
-const HistoricalChessAnalyzer = require('./otb-database/historical-analyzer');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
+
+// Optional OTB analysis modules (don't crash if missing)
+let OTBDatabaseManager, PGNParser, GameMovesLoader, AdvancedChessAnalyzer, HistoricalChessAnalyzer;
+try {
+  OTBDatabaseManager = require('./otb-database/download-manager');
+  PGNParser = require('./otb-database/pgn-parser');
+  GameMovesLoader = require('./otb-database/game-moves-loader');
+  AdvancedChessAnalyzer = require('./otb-database/advanced-analyzer');
+  HistoricalChessAnalyzer = require('./otb-database/historical-analyzer');
+} catch (err) {
+  console.warn('⚠️  OTB analysis modules not available:', err.message);
+  console.log('   Server will continue with limited functionality\n');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3007; // Use Railway's PORT or default to 3007
@@ -1715,11 +1722,11 @@ process.on('SIGTERM', () => {
   });
 });
 
-// OTB Database endpoints
-const otbManager = new OTBDatabaseManager();
-const pgnParser = new PGNParser();
-const gameMovesLoader = new GameMovesLoader();
-const advancedAnalyzer = new AdvancedChessAnalyzer();
+// OTB Database endpoints (only instantiate if modules loaded)
+const otbManager = OTBDatabaseManager ? new OTBDatabaseManager() : null;
+const pgnParser = PGNParser ? new PGNParser() : null;
+const gameMovesLoader = GameMovesLoader ? new GameMovesLoader() : null;
+const advancedAnalyzer = AdvancedChessAnalyzer ? new AdvancedChessAnalyzer() : null;
 
 // Cache for advanced stats (compute-intensive)
 let cachedAdvancedStats = null;
@@ -2353,6 +2360,10 @@ app.get('/api/historical/stats', async (req, res) => {
     }
     
     // Run analysis if no cached results
+    if (!HistoricalChessAnalyzer) {
+      return res.status(503).json({ error: 'Historical analysis not available' });
+    }
+
     const analyzer = new HistoricalChessAnalyzer();
     const pgnDir = path.join(__dirname, 'otb-database', 'pgn-files');
     const stats = await analyzer.analyzeAllDatabases(pgnDir);
