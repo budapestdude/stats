@@ -102,11 +102,13 @@ const movesDbPath = path.join(__dirname, 'chess-stats.db');
 
 // Connect to main database
 if (fs.existsSync(dbPath)) {
+  const dbName = path.basename(dbPath);
+  const isSubset = dbName.includes('subset');
   db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err) => {
     if (err) {
       console.error('Error opening main database:', err);
     } else {
-      console.log('Connected to main database (complete-tournaments.db with 9.1M games)');
+      console.log(`Connected to main database (${dbName} with ${isSubset ? '500k' : '9.1M'} games)`);
       // Get actual stats from database
       db.get('SELECT COUNT(*) as count FROM games', (err, row) => {
         if (!err && row) {

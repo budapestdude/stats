@@ -6,8 +6,13 @@ cmds = ['npm install']
 
 [phases.build]
 cmds = [
+  'echo "Installing Git LFS..."',
   'git lfs install',
-  'git lfs pull'
+  'echo "Pulling LFS files..."',
+  'git lfs pull',
+  'echo "Checking for railway-subset.db..."',
+  'ls -lh otb-database/ || echo "otb-database directory not found"',
+  'ls -lh otb-database/railway-subset.db || echo "railway-subset.db not found"'
 ]
 
 [start]
