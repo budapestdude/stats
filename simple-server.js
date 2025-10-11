@@ -117,27 +117,28 @@ let dbPath = (volumeDbPath && fs.existsSync(volumeDbPath))
 console.log(`   Selected DB path: ${dbPath}`);
 console.log(`   Selected DB exists: ${fs.existsSync(dbPath)}`);
 
-// If using volume database, copy to /tmp for SQLite write access
-if (volumeDbPath && dbPath === volumeDbPath) {
+// If using volume database, copy to /tmp for SQLite write access (Railway volumes may not allow SQLite temp files)
+if (volumeDbPath && dbPath === volumeDbPath && fs.existsSync(volumeDbPath)) {
   const tmpDbPath = '/tmp/railway-subset.db';
 
-  // Only copy if tmp file doesn't exist or volume file is newer
-  if (!fs.existsSync(tmpDbPath) ||
-      fs.statSync(volumeDbPath).mtime > fs.statSync(tmpDbPath).mtime) {
-    console.log(`   Copying database to /tmp for SQLite write access...`);
-    try {
+  try {
+    // Only copy if tmp file doesn't exist or volume file is newer
+    if (!fs.existsSync(tmpDbPath) ||
+        fs.statSync(volumeDbPath).mtime > fs.statSync(tmpDbPath).mtime) {
+      console.log(`   Copying database to /tmp for SQLite write access...`);
       fs.copyFileSync(volumeDbPath, tmpDbPath);
       fs.chmodSync(tmpDbPath, 0o666);
       const stats = fs.statSync(tmpDbPath);
-      console.log(`   Copy complete: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`   ✓ Copy complete: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
       dbPath = tmpDbPath;
-    } catch (err) {
-      console.error(`   Copy failed: ${err.message}`);
-      console.log(`   Will try to use volume path directly`);
+    } else {
+      console.log(`   ✓ Using cached /tmp database`);
+      dbPath = tmpDbPath;
     }
-  } else {
-    console.log(`   Using cached /tmp database`);
-    dbPath = tmpDbPath;
+  } catch (err) {
+    console.error(`   ✗ Copy to /tmp failed: ${err.message}`);
+    console.log(`   → Trying volume path directly (may have SQLite errors)`);
+    // Keep dbPath as volumeDbPath
   }
 }
 
@@ -164,13 +165,15 @@ if (fs.existsSync(dbPath)) {
 
   db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err) => {
     if (err) {
-      console.error('Error opening main database:', err);
+      console.error('❌ Error opening main database:', err.message);
+      console.log('⚠️  Server will continue without OTB database\n');
+      db = null; // Clear the database connection
     } else {
-      console.log(`Connected to main database (${dbName} with ${isSubset ? '500k' : '9.1M'} games)`);
+      console.log(`✅ Connected to main database (${dbName} with ${isSubset ? '500k' : '9.1M'} games)`);
       // Get actual stats from database
       db.get('SELECT COUNT(*) as count FROM games', (err, row) => {
         if (!err && row) {
-          console.log(`Database contains ${row.count.toLocaleString()} games`);
+          console.log(`   Database contains ${row.count.toLocaleString()} games`);
         }
       });
     }
