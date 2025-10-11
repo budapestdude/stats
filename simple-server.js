@@ -2906,6 +2906,23 @@ app.get('/api/debug/schema', (req, res) => {
   });
 });
 
+// Debug endpoint to check database indexes
+app.get('/api/debug/indexes', (req, res) => {
+  if (!db) {
+    return res.json({ error: 'Database not connected' });
+  }
+
+  db.all('SELECT name, sql FROM sqlite_master WHERE type="index" AND name LIKE "idx_%"', [], (err, rows) => {
+    if (err) {
+      return res.json({ error: err.message });
+    }
+    res.json({
+      count: rows.length,
+      indexes: rows
+    });
+  });
+});
+
 // Debug endpoint to test database queries
 app.get('/api/debug/search-player', (req, res) => {
   const searchName = req.query.q || 'Carlsen';
