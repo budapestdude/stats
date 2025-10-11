@@ -102,9 +102,21 @@ const volumeDbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
 const railwayDbPath = path.join(__dirname, 'otb-database', 'railway-subset.db');
 const fullDbPath = path.join(__dirname, 'otb-database', 'complete-tournaments.db');
 
+// Debug logging
+console.log('🔍 Database path debug:');
+console.log(`   RAILWAY_VOLUME_MOUNT_PATH: ${process.env.RAILWAY_VOLUME_MOUNT_PATH || 'not set'}`);
+console.log(`   Volume DB path: ${volumeDbPath || 'not set'}`);
+console.log(`   Volume DB exists: ${volumeDbPath ? fs.existsSync(volumeDbPath) : 'N/A'}`);
+console.log(`   Railway DB path: ${railwayDbPath}`);
+console.log(`   Railway DB exists: ${fs.existsSync(railwayDbPath)}`);
+
 const dbPath = (volumeDbPath && fs.existsSync(volumeDbPath))
   ? volumeDbPath
   : (fs.existsSync(railwayDbPath) ? railwayDbPath : fullDbPath);
+
+console.log(`   Selected DB path: ${dbPath}`);
+console.log(`   Selected DB exists: ${fs.existsSync(dbPath)}\n`);
+
 const movesDbPath = path.join(__dirname, 'chess-stats.db');
 
 // Connect to main database
