@@ -94,7 +94,7 @@ app.use(express.json());
 let db = null; // Main database
 let movesDb = null; // Smaller database with moves
 
-// Use Railway subset database (500k games) for deployment, or full database if available
+// Use railway subset database (500k games, 124MB) for Railway deployment
 const railwayDbPath = path.join(__dirname, 'otb-database', 'railway-subset.db');
 const fullDbPath = path.join(__dirname, 'otb-database', 'complete-tournaments.db');
 const dbPath = fs.existsSync(railwayDbPath) ? railwayDbPath : fullDbPath;
