@@ -123,7 +123,15 @@ const movesDbPath = path.join(__dirname, 'chess-stats.db');
 if (fs.existsSync(dbPath)) {
   const dbName = path.basename(dbPath);
   const isSubset = dbName.includes('subset');
-  db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err) => {
+
+  // Use OPEN_READWRITE mode for Volume databases (SQLite needs to write temp files)
+  const openMode = volumeDbPath && dbPath === volumeDbPath
+    ? sqlite3.OPEN_READWRITE
+    : sqlite3.OPEN_READONLY;
+
+  console.log(`   Opening in ${openMode === sqlite3.OPEN_READWRITE ? 'READ-WRITE' : 'READ-ONLY'} mode\n`);
+
+  db = new sqlite3.Database(dbPath, openMode, (err) => {
     if (err) {
       console.error('Error opening main database:', err);
     } else {
