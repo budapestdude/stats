@@ -1,2 +1,1 @@
-# Git LFS - Track railway-subset.db only
-otb-database/railway-subset.db filter=lfs diff=lfs merge=lfs -text
+# Not using Git LFS anymore - downloading from GitHub Release instead
