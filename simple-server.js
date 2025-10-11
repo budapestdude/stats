@@ -341,15 +341,15 @@ app.get('/api/openings', async (req, res) => {
   try {
     const query = `
       SELECT
-        ECO as eco,
-        Opening as name,
+        eco,
+        opening as name,
         COUNT(*) as games,
-        ROUND(SUM(CASE WHEN Result = '1-0' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as whiteWins,
-        ROUND(SUM(CASE WHEN Result = '1/2-1/2' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as draws,
-        ROUND(SUM(CASE WHEN Result = '0-1' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as blackWins
+        ROUND(SUM(CASE WHEN result = '1-0' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as whiteWins,
+        ROUND(SUM(CASE WHEN result = '1/2-1/2' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as draws,
+        ROUND(SUM(CASE WHEN result = '0-1' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as blackWins
       FROM games
-      WHERE ECO IS NOT NULL AND Opening IS NOT NULL
-      GROUP BY ECO, Opening
+      WHERE eco IS NOT NULL AND opening IS NOT NULL
+      GROUP BY eco, opening
       ORDER BY games DESC
       LIMIT 50
     `;
@@ -2613,9 +2613,9 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
     let playerData = null;
     for (const pattern of searchPatterns) {
       const searchQuery = `
-        SELECT White as name FROM games WHERE White LIKE ? LIMIT 1
+        SELECT white_player as name FROM games WHERE white_player LIKE ? LIMIT 1
         UNION
-        SELECT Black as name FROM games WHERE Black LIKE ? LIMIT 1
+        SELECT black_player as name FROM games WHERE black_player LIKE ? LIMIT 1
       `;
 
       console.log(`[DEBUG] Trying pattern: ${pattern}`);
@@ -2655,11 +2655,11 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
     const statsQuery = `
       SELECT
         COUNT(*) as totalGames,
-        SUM(CASE WHEN (White = ? AND Result = '1-0') OR (Black = ? AND Result = '0-1') THEN 1 ELSE 0 END) as wins,
-        SUM(CASE WHEN Result = '1/2-1/2' THEN 1 ELSE 0 END) as draws,
-        SUM(CASE WHEN (White = ? AND Result = '0-1') OR (Black = ? AND Result = '1-0') THEN 1 ELSE 0 END) as losses
+        SUM(CASE WHEN (white_player = ? AND result = '1-0') OR (black_player = ? AND result = '0-1') THEN 1 ELSE 0 END) as wins,
+        SUM(CASE WHEN result = '1/2-1/2' THEN 1 ELSE 0 END) as draws,
+        SUM(CASE WHEN (white_player = ? AND result = '0-1') OR (black_player = ? AND result = '1-0') THEN 1 ELSE 0 END) as losses
       FROM games
-      WHERE White = ? OR Black = ?
+      WHERE white_player = ? OR black_player = ?
     `;
 
     db.get(statsQuery, [playerData, playerData, playerData, playerData, playerData, playerData], (err, stats) => {
