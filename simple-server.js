@@ -94,10 +94,16 @@ app.use(express.json());
 let db = null; // Main database
 let movesDb = null; // Smaller database with moves
 
-// Use railway subset database (500k games, 124MB) for Railway deployment
+// Database path priority: Volume > Railway subset > Full local
+const volumeDbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'railway-subset.db')
+  : null;
 const railwayDbPath = path.join(__dirname, 'otb-database', 'railway-subset.db');
 const fullDbPath = path.join(__dirname, 'otb-database', 'complete-tournaments.db');
-const dbPath = fs.existsSync(railwayDbPath) ? railwayDbPath : fullDbPath;
+
+const dbPath = (volumeDbPath && fs.existsSync(volumeDbPath))
+  ? volumeDbPath
+  : (fs.existsSync(railwayDbPath) ? railwayDbPath : fullDbPath);
 const movesDbPath = path.join(__dirname, 'chess-stats.db');
 
 // Connect to main database
