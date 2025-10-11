@@ -11,6 +11,12 @@ const DB_PATH = path.join(VOLUME_PATH, 'railway-subset.db');
 
 console.log('🔍 Checking for database...\n');
 
+// Check if force redownload is enabled
+if (process.env.FORCE_REDOWNLOAD === 'true' && fs.existsSync(DB_PATH)) {
+  console.log('⚠️  FORCE_REDOWNLOAD enabled - deleting existing database');
+  fs.unlinkSync(DB_PATH);
+}
+
 // Check if database already exists in volume
 if (fs.existsSync(DB_PATH)) {
   const stats = fs.statSync(DB_PATH);
