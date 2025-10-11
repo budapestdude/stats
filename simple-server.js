@@ -115,7 +115,37 @@ const dbPath = (volumeDbPath && fs.existsSync(volumeDbPath))
   : (fs.existsSync(railwayDbPath) ? railwayDbPath : fullDbPath);
 
 console.log(`   Selected DB path: ${dbPath}`);
-console.log(`   Selected DB exists: ${fs.existsSync(dbPath)}\n`);
+console.log(`   Selected DB exists: ${fs.existsSync(dbPath)}`);
+
+// Check file stats and permissions
+if (fs.existsSync(dbPath)) {
+  try {
+    const stats = fs.statSync(dbPath);
+    const mode = (stats.mode & parseInt('777', 8)).toString(8);
+    console.log(`   File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`   Permissions: ${mode}`);
+
+    // Check if file is readable
+    try {
+      fs.accessSync(dbPath, fs.constants.R_OK | fs.constants.W_OK);
+      console.log(`   Access: ✓ Readable and writable`);
+    } catch (err) {
+      console.log(`   Access: ✗ ${err.message}`);
+    }
+
+    // Check if directory is writable
+    const dirPath = path.dirname(dbPath);
+    try {
+      fs.accessSync(dirPath, fs.constants.W_OK);
+      console.log(`   Directory: ✓ Writable`);
+    } catch (err) {
+      console.log(`   Directory: ✗ Not writable - ${err.message}`);
+    }
+  } catch (err) {
+    console.log(`   Error checking file: ${err.message}`);
+  }
+}
+console.log();
 
 const movesDbPath = path.join(__dirname, 'chess-stats.db');
 
