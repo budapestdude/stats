@@ -27,8 +27,8 @@ if (!GOOGLE_DRIVE_FILE_ID) {
 console.log('📥 Downloading database from Google Drive...');
 console.log(`   File ID: ${GOOGLE_DRIVE_FILE_ID}\n`);
 
-// Google Drive direct download URL
-const downloadUrl = `https://drive.google.com/uc?export=download&id=${GOOGLE_DRIVE_FILE_ID}`;
+// Google Drive direct download URL with confirmation bypass for large files
+const downloadUrl = `https://drive.google.com/uc?export=download&id=${GOOGLE_DRIVE_FILE_ID}&confirm=t`;
 
 // Create otb-database directory if it doesn't exist
 const dbDir = path.dirname(DB_PATH);
