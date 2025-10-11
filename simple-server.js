@@ -2613,9 +2613,10 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
     let playerData = null;
     for (const pattern of searchPatterns) {
       const searchQuery = `
-        SELECT white_player as name FROM games WHERE white_player LIKE ? LIMIT 1
+        SELECT white_player as name FROM games WHERE white_player LIKE ?
         UNION
-        SELECT black_player as name FROM games WHERE black_player LIKE ? LIMIT 1
+        SELECT black_player as name FROM games WHERE black_player LIKE ?
+        LIMIT 1
       `;
 
       console.log(`[DEBUG] Trying pattern: ${pattern}`);
