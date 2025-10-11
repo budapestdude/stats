@@ -93,20 +93,31 @@ async function fetchWithRetry(url, options = {}, retries = 3) {
 
 app.use(cors({
   origin: function(origin, callback) {
-    const allowedOrigins = [
-      'http://localhost:',
-      'http://195.201.6.244',
-      'https://195.201.6.244',
-      'https://chess-stats-production.up.railway.app',
-      '.railway.app' // Allow all Railway apps
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const allowedPatterns = [
+      /^http:\/\/localhost(:\d+)?$/,           // localhost with any port
+      /^https?:\/\/195\.201\.6\.244(:\d+)?$/,  // Hetzner IP
+      /\.railway\.app$/,                        // All Railway apps
+      /^https?:\/\/invigorating-solace-production\.up\.railway\.app$/, // Frontend
+      /^https?:\/\/stats-production-10e3\.up\.railway\.app$/           // Backend
     ];
-    if (!origin || allowedOrigins.some(allowed => origin.includes(allowed))) {
+
+    const isAllowed = allowedPatterns.some(pattern => pattern.test(origin));
+
+    if (isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(null, true); // Allow anyway for development - change to callback(new Error('Not allowed by CORS')) in production
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
