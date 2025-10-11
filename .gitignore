@@ -52,3 +52,5 @@ out/
 # Uploads
 uploads/
 public/uploads/
+# Database chunks for GitHub Release
+database-chunks/
