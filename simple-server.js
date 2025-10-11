@@ -1380,12 +1380,15 @@ app.get('/api/players/search', async (req, res) => {
 // Get player opening statistics from recent games
 app.get('/api/players/:username/openings', async (req, res) => {
   try {
-    const { username } = req.params;
+    let { username } = req.params;
     const { limit = 100, timeClass = 'all' } = req.query;
+
+    // Normalize username
+    const normalizedUsername = username.replace(/-/g, '').toLowerCase();
 
     // Get list of available archives with retry
     const archivesResponse = await fetchWithRetry(
-      `${CHESS_COM_API}/player/${username}/games/archives`,
+      `${CHESS_COM_API}/player/${normalizedUsername}/games/archives`,
       { headers: { 'User-Agent': USER_AGENT } }
     );
 
@@ -1599,14 +1602,18 @@ function extractOpening(pgn) {
 // Get player by username (combined Chess.com/Lichess)
 app.get('/api/players/:username', async (req, res) => {
   try {
-    const { username } = req.params;
+    let { username } = req.params;
+
+    // Normalize username: remove hyphens and convert to lowercase
+    // This allows URLs like /players/magnus-carlsen to work with Chess.com username "magnuscarlsen"
+    const normalizedUsername = username.replace(/-/g, '').toLowerCase();
 
     // Fetch player profile and stats with retry logic
     const [profileResponse, statsResponse] = await Promise.all([
-      fetchWithRetry(`${CHESS_COM_API}/player/${username}`, {
+      fetchWithRetry(`${CHESS_COM_API}/player/${normalizedUsername}`, {
         headers: { 'User-Agent': USER_AGENT }
       }),
-      fetchWithRetry(`${CHESS_COM_API}/player/${username}/stats`, {
+      fetchWithRetry(`${CHESS_COM_API}/player/${normalizedUsername}/stats`, {
         headers: { 'User-Agent': USER_AGENT }
       })
     ]);
