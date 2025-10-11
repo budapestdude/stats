@@ -2606,6 +2606,9 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
       parts.join(' ') // "Magnus Carlsen"
     ];
 
+    console.log(`[DEBUG] Searching for player: ${playerName}`);
+    console.log(`[DEBUG] Search patterns:`, searchPatterns);
+
     // Search for player in database
     let playerData = null;
     for (const pattern of searchPatterns) {
@@ -2615,16 +2618,26 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
         SELECT Black as name FROM games WHERE Black LIKE ? LIMIT 1
       `;
 
+      console.log(`[DEBUG] Trying pattern: ${pattern}`);
+
       const result = await new Promise((resolve) => {
         db.get(searchQuery, [`%${pattern}%`, `%${pattern}%`], (err, row) => {
+          if (err) {
+            console.error(`[DEBUG] Database error:`, err);
+          }
           resolve(row);
         });
       });
 
       if (result) {
         playerData = result.name;
+        console.log(`[DEBUG] Found player: ${playerData}`);
         break;
       }
+    }
+
+    if (!playerData) {
+      console.log(`[DEBUG] No player found in database`);
     }
 
     if (!playerData) {
