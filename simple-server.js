@@ -19,6 +19,18 @@ try {
   console.log('   Server will continue with limited functionality\n');
 }
 
+// Global error handlers to prevent crashes
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  console.error('   Stack:', err.stack);
+  // Don't exit - let the server continue running
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise);
+  console.error('   Reason:', reason);
+});
+
 const app = express();
 const PORT = process.env.PORT || 3007; // Use Railway's PORT or default to 3007
 const CHESS_COM_API = 'https://api.chess.com/pub';
@@ -177,16 +189,17 @@ if (fs.existsSync(dbPath)) {
       db = null; // Clear the database connection
     } else {
       console.log(`✅ Connected to main database (${dbName} with ${isSubset ? '500k' : '9.1M'} games)`);
-      // Skip count query - it requires temp files and may cause SQLITE_CANTOPEN on Railway
-      // The database is ready to use for API queries
       console.log('   Database ready for queries\n');
     }
   });
 
-  // Handle database errors that occur after connection
-  db.on('error', (err) => {
-    console.error('❌ Database error:', err.message);
-  });
+  // Prevent database errors from crashing the server
+  if (db) {
+    db.on('error', (err) => {
+      console.error('❌ Database error (non-fatal):', err.message);
+      // Don't crash - just log the error
+    });
+  }
 }
 
 // Connect to moves database (optional - contains move-by-move data)
@@ -202,9 +215,11 @@ if (fs.existsSync(movesDbPath)) {
     }
   });
 
-  movesDb.on('error', (err) => {
-    console.error('❌ Moves database error:', err.message);
-  });
+  if (movesDb) {
+    movesDb.on('error', (err) => {
+      console.error('❌ Moves database error (non-fatal):', err.message);
+    });
+  }
 } else {
   console.log('ℹ️  Moves database not found, skipping\n');
 }
