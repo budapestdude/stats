@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const path = require('path');
+const multer = require('multer');
 const OTBDatabaseManager = require('./otb-database/download-manager');
 // Server reloaded
 const PGNParser = require('./otb-database/pgn-parser');
@@ -143,11 +144,47 @@ if (fs.existsSync(movesDbPath)) {
 
 // Test endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
+  res.json({
+    status: 'healthy',
     timestamp: new Date().toISOString(),
     message: 'Chess Stats API is running!'
   });
+});
+
+// TEMPORARY: Database upload endpoint (remove after upload)
+const upload = multer({ dest: '/tmp/' });
+app.post('/admin/upload-db', upload.single('database'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const uploadedPath = req.file.path;
+    const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH || '/app/data';
+    const targetPath = path.join(volumePath, 'railway-subset.db');
+
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(volumePath)) {
+      fs.mkdirSync(volumePath, { recursive: true });
+    }
+
+    // Move uploaded file to volume
+    fs.renameSync(uploadedPath, targetPath);
+    fs.chmodSync(targetPath, 0o644);
+
+    const stats = fs.statSync(targetPath);
+    const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
+
+    res.json({
+      success: true,
+      message: 'Database uploaded successfully',
+      path: targetPath,
+      size: `${sizeMB} MB`
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Test API endpoints
