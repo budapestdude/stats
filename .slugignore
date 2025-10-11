@@ -1,56 +1,48 @@
-# Exclude large files from Railway deployment
+# Railway Deployment - Exclude from build
 
-# Database files (too large for Railway)
+# Large database files (use railway-subset.db only)
 otb-database/complete-tournaments.db
 otb-database/chess-stats-10m.db
 otb-database/*.db-wal
 otb-database/*.db-shm
 
-# ALLOW railway-subset.db for deployment
+# INCLUDE railway subset database
 !otb-database/railway-subset.db
 
 # PGN source files
 otb-database/pgn-files/
-LumbrasGigaBase_OTB_2025/
-
-# Processed data (can be regenerated)
 otb-database/processed/
 otb-database/indexes/
+LumbrasGigaBase_OTB_2025/
 
 # Development files
 .git/
 .github/
 .vscode/
 .idea/
+.claude/
 
 # Temporary files
 *.log
 *.tmp
 *.temp
-temp_private_key.pem
-windows_key.pem
-github_deploy_key.txt
+push-output.log
 
 # Test files
 test-*.js
 *.test.js
 __tests__/
+tests/
 
-# Documentation (keep essential ones)
+# Documentation (keep README only)
 *.md
 !README.md
-!RAILWAY_DEPLOYMENT_GUIDE.md
 
-# Hetzner specific files
-hetzner-*.sh
-setup-https.sh
-deploy.sh
-
-# Docker files (not needed on Railway)
-Dockerfile
-Dockerfile.backend
-docker-compose.yml
-.dockerignore
+# Build outputs
+dist/
+build/
+.next/
+out/
 
 # Other large files
 upload.tar.gz
