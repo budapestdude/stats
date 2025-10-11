@@ -110,37 +110,43 @@ console.log(`   Volume DB exists: ${volumeDbPath ? fs.existsSync(volumeDbPath) :
 console.log(`   Railway DB path: ${railwayDbPath}`);
 console.log(`   Railway DB exists: ${fs.existsSync(railwayDbPath)}`);
 
-const dbPath = (volumeDbPath && fs.existsSync(volumeDbPath))
+let dbPath = (volumeDbPath && fs.existsSync(volumeDbPath))
   ? volumeDbPath
   : (fs.existsSync(railwayDbPath) ? railwayDbPath : fullDbPath);
 
 console.log(`   Selected DB path: ${dbPath}`);
 console.log(`   Selected DB exists: ${fs.existsSync(dbPath)}`);
 
-// Check file stats and permissions
+// If using volume database, copy to /tmp for SQLite write access
+if (volumeDbPath && dbPath === volumeDbPath) {
+  const tmpDbPath = '/tmp/railway-subset.db';
+
+  // Only copy if tmp file doesn't exist or volume file is newer
+  if (!fs.existsSync(tmpDbPath) ||
+      fs.statSync(volumeDbPath).mtime > fs.statSync(tmpDbPath).mtime) {
+    console.log(`   Copying database to /tmp for SQLite write access...`);
+    try {
+      fs.copyFileSync(volumeDbPath, tmpDbPath);
+      fs.chmodSync(tmpDbPath, 0o666);
+      const stats = fs.statSync(tmpDbPath);
+      console.log(`   Copy complete: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+      dbPath = tmpDbPath;
+    } catch (err) {
+      console.error(`   Copy failed: ${err.message}`);
+      console.log(`   Will try to use volume path directly`);
+    }
+  } else {
+    console.log(`   Using cached /tmp database`);
+    dbPath = tmpDbPath;
+  }
+}
+
+// Check file stats
 if (fs.existsSync(dbPath)) {
   try {
     const stats = fs.statSync(dbPath);
-    const mode = (stats.mode & parseInt('777', 8)).toString(8);
+    console.log(`   Final DB path: ${dbPath}`);
     console.log(`   File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
-    console.log(`   Permissions: ${mode}`);
-
-    // Check if file is readable
-    try {
-      fs.accessSync(dbPath, fs.constants.R_OK | fs.constants.W_OK);
-      console.log(`   Access: ✓ Readable and writable`);
-    } catch (err) {
-      console.log(`   Access: ✗ ${err.message}`);
-    }
-
-    // Check if directory is writable
-    const dirPath = path.dirname(dbPath);
-    try {
-      fs.accessSync(dirPath, fs.constants.W_OK);
-      console.log(`   Directory: ✓ Writable`);
-    } catch (err) {
-      console.log(`   Directory: ✗ Not writable - ${err.message}`);
-    }
   } catch (err) {
     console.log(`   Error checking file: ${err.message}`);
   }
@@ -154,14 +160,9 @@ if (fs.existsSync(dbPath)) {
   const dbName = path.basename(dbPath);
   const isSubset = dbName.includes('subset');
 
-  // Use OPEN_READWRITE mode for Volume databases (SQLite needs to write temp files)
-  const openMode = volumeDbPath && dbPath === volumeDbPath
-    ? sqlite3.OPEN_READWRITE
-    : sqlite3.OPEN_READONLY;
+  console.log(`   Opening database in READ-ONLY mode\n`);
 
-  console.log(`   Opening in ${openMode === sqlite3.OPEN_READWRITE ? 'READ-WRITE' : 'READ-ONLY'} mode\n`);
-
-  db = new sqlite3.Database(dbPath, openMode, (err) => {
+  db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err) => {
     if (err) {
       console.error('Error opening main database:', err);
     } else {
