@@ -2583,27 +2583,98 @@ app.get('/api/historical/insights', async (req, res) => {
 // Player statistics endpoints
 app.get('/api/players/:playerName/stats', async (req, res) => {
   try {
-    const { playerName } = req.params;
-    
-    // First check for enhanced stats
-    const enhancedStatsPath = path.join(__dirname, 'otb-database', 'processed', `${playerName.toLowerCase().replace(/\s+/g, '-')}-enhanced-stats.json`);
-    if (fs.existsSync(enhancedStatsPath)) {
-      const stats = JSON.parse(fs.readFileSync(enhancedStatsPath, 'utf8'));
-      res.json(stats);
-      return;
+    let { playerName } = req.params;
+
+    if (!db) {
+      return res.json({
+        player: playerName,
+        overview: { totalGames: 0, wins: 0, draws: 0, losses: 0 },
+        byColor: { white: { games: 0 }, black: { games: 0 } }
+      });
     }
-    
-    // Fall back to regular stats
-    const statsPath = path.join(__dirname, 'otb-database', 'processed', `${playerName.toLowerCase().replace(/\s+/g, '-')}-stats.json`);
-    if (fs.existsSync(statsPath)) {
-      const stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
-      res.json(stats);
-    } else {
-      // Generate stats if not cached
-      const { analyzePlayer } = require('./otb-database/player-analyzer');
-      const stats = await analyzePlayer(playerName);
-      res.json(stats);
+
+    // Convert URL-friendly name to database format
+    // "magnus-carlsen" -> Try to find "Carlsen, Magnus" or similar
+    const normalizedName = playerName.replace(/-/g, ' ');
+    const parts = normalizedName.split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+
+    // Try different name formats
+    const searchPatterns = [
+      normalizedName, // "magnus carlsen"
+      parts.join(', '), // "Magnus, Carlsen"
+      `${parts[parts.length - 1]}, ${parts.slice(0, -1).join(' ')}`, // "Carlsen, Magnus"
+      parts.join(' ') // "Magnus Carlsen"
+    ];
+
+    // Search for player in database
+    let playerData = null;
+    for (const pattern of searchPatterns) {
+      const searchQuery = `
+        SELECT White as name FROM games WHERE White LIKE ? LIMIT 1
+        UNION
+        SELECT Black as name FROM games WHERE Black LIKE ? LIMIT 1
+      `;
+
+      const result = await new Promise((resolve) => {
+        db.get(searchQuery, [`%${pattern}%`, `%${pattern}%`], (err, row) => {
+          resolve(row);
+        });
+      });
+
+      if (result) {
+        playerData = result.name;
+        break;
+      }
     }
+
+    if (!playerData) {
+      // No games found - return zeros
+      return res.json({
+        player: playerName,
+        overview: { totalGames: 0, wins: 0, draws: 0, losses: 0, winRate: "0", drawRate: "0", lossRate: "0" },
+        byColor: { white: { games: 0, wins: 0, draws: 0, losses: 0 }, black: { games: 0, wins: 0, draws: 0, losses: 0 } },
+        yearlyStats: {},
+        openings: { asWhite: [], asBlack: [] }
+      });
+    }
+
+    // Calculate stats from database
+    const statsQuery = `
+      SELECT
+        COUNT(*) as totalGames,
+        SUM(CASE WHEN (White = ? AND Result = '1-0') OR (Black = ? AND Result = '0-1') THEN 1 ELSE 0 END) as wins,
+        SUM(CASE WHEN Result = '1/2-1/2' THEN 1 ELSE 0 END) as draws,
+        SUM(CASE WHEN (White = ? AND Result = '0-1') OR (Black = ? AND Result = '1-0') THEN 1 ELSE 0 END) as losses
+      FROM games
+      WHERE White = ? OR Black = ?
+    `;
+
+    db.get(statsQuery, [playerData, playerData, playerData, playerData, playerData, playerData], (err, stats) => {
+      if (err) {
+        console.error('Error fetching player stats:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      const total = stats.totalGames || 0;
+      res.json({
+        player: playerData,
+        overview: {
+          totalGames: total,
+          wins: stats.wins || 0,
+          draws: stats.draws || 0,
+          losses: stats.losses || 0,
+          winRate: total > 0 ? ((stats.wins / total) * 100).toFixed(1) : "0",
+          drawRate: total > 0 ? ((stats.draws / total) * 100).toFixed(1) : "0",
+          lossRate: total > 0 ? ((stats.losses / total) * 100).toFixed(1) : "0"
+        },
+        byColor: {
+          white: { games: 0, wins: 0, draws: 0, losses: 0 }, // Can add detailed queries later
+          black: { games: 0, wins: 0, draws: 0, losses: 0 }
+        },
+        yearlyStats: {},
+        openings: { asWhite: [], asBlack: [] }
+      });
+    });
   } catch (error) {
     console.error('Player stats error:', error);
     res.status(500).json({ error: 'Failed to get player statistics' });
