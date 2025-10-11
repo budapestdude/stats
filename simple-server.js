@@ -2694,6 +2694,35 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
   }
 });
 
+// Debug endpoint to test database queries
+app.get('/api/debug/search-player', (req, res) => {
+  const searchName = req.query.q || 'Carlsen';
+
+  if (!db) {
+    return res.json({ error: 'Database not connected' });
+  }
+
+  const query = `
+    SELECT White as player, COUNT(*) as games
+    FROM games
+    WHERE White LIKE ?
+    GROUP BY White
+    ORDER BY games DESC
+    LIMIT 10
+  `;
+
+  db.all(query, [`%${searchName}%`], (err, rows) => {
+    if (err) {
+      return res.json({ error: err.message });
+    }
+    res.json({
+      searchTerm: searchName,
+      results: rows,
+      count: rows.length
+    });
+  });
+});
+
 // Get list of analyzed players
 app.get('/api/players/analyzed', (req, res) => {
   try {
