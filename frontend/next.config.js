@@ -15,11 +15,11 @@ const nextConfig = {
 
   // Environment variables
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244',
-    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://195.201.6.244/api',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://stats-production-10e3.up.railway.app',
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://stats-production-10e3.up.railway.app/api',
   },
 
-  // API rewrites disabled for Railway deployment (backend on separate Hetzner server)
+  // API rewrites disabled for Railway deployment (backend on separate Railway service)
   // Frontend will call API directly using NEXT_PUBLIC_API_URL
   async rewrites() {
     return [];
