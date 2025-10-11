@@ -2716,16 +2716,23 @@ app.get('/api/debug/search-player', (req, res) => {
     return res.json({ error: 'Database not connected' });
   }
 
-  // Get table schema first
-  db.all("PRAGMA table_info(games)", [], (schemaErr, columns) => {
-    if (schemaErr) {
-      return res.json({ error: 'Schema error: ' + schemaErr.message });
-    }
+  const query = `
+    SELECT white_player as player, COUNT(*) as games
+    FROM games
+    WHERE white_player LIKE ?
+    GROUP BY white_player
+    ORDER BY games DESC
+    LIMIT 10
+  `;
 
-    const columnNames = columns.map(c => c.name);
+  db.all(query, [`%${searchName}%`], (err, rows) => {
+    if (err) {
+      return res.json({ error: err.message });
+    }
     res.json({
-      availableColumns: columnNames,
-      message: 'Use /api/debug/schema for full schema details'
+      searchTerm: searchName,
+      results: rows,
+      count: rows.length
     });
   });
 });
