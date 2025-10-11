@@ -2598,12 +2598,12 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
     const normalizedName = playerName.replace(/-/g, ' ');
     const parts = normalizedName.split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
 
-    // Try different name formats
+    // Try different name formats (most specific first to avoid doubles/teams)
     const searchPatterns = [
-      normalizedName, // "magnus carlsen"
-      parts.join(', '), // "Magnus, Carlsen"
-      `${parts[parts.length - 1]}, ${parts.slice(0, -1).join(' ')}`, // "Carlsen, Magnus"
-      parts.join(' ') // "Magnus Carlsen"
+      `${parts[parts.length - 1]}, ${parts.slice(0, -1).join(' ')}`, // "Carlsen, Magnus" - try this FIRST (most common OTB format)
+      parts.join(' '), // "Magnus Carlsen" - exact capitalized match
+      normalizedName, // "magnus carlsen" - lowercase
+      parts.join(', ') // "Magnus, Carlsen" - reversed comma format
     ];
 
     console.log(`[DEBUG] Searching for player: ${playerName}`);
