@@ -1,11 +1,14 @@
 [phases.setup]
-nixPkgs = ['nodejs_20']
+nixPkgs = ['nodejs', 'git-lfs']
 
 [phases.install]
-cmds = ['cd frontend && npm ci']
+cmds = ['npm install']
 
 [phases.build]
-cmds = ['cd frontend && npm run build']
+cmds = [
+  'git lfs install',
+  'git lfs pull'
+]
 
 [start]
-cmd = 'cd frontend && npm start'
+cmd = 'node simple-server.js'
