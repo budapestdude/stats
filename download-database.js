@@ -54,10 +54,10 @@ function formatTime(ms) {
 function downloadFile(url) {
   return new Promise((resolve, reject) => {
     https.get(url, (response) => {
-      // Handle redirects (Google Drive confirmation page for large files)
-      if (response.statusCode === 302 || response.statusCode === 301) {
+      // Handle all redirect status codes (301, 302, 303, 307, 308)
+      if (response.statusCode >= 300 && response.statusCode < 400) {
         const redirectUrl = response.headers.location;
-        console.log('   Following redirect...');
+        console.log(`   Following redirect (${response.statusCode})...`);
         return downloadFile(redirectUrl).then(resolve).catch(reject);
       }
 
