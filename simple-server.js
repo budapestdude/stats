@@ -2694,6 +2694,20 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
   }
 });
 
+// Debug endpoint to check database schema
+app.get('/api/debug/schema', (req, res) => {
+  if (!db) {
+    return res.json({ error: 'Database not connected' });
+  }
+
+  db.all("PRAGMA table_info(games)", [], (err, columns) => {
+    if (err) {
+      return res.json({ error: err.message });
+    }
+    res.json({ columns: columns });
+  });
+});
+
 // Debug endpoint to test database queries
 app.get('/api/debug/search-player', (req, res) => {
   const searchName = req.query.q || 'Carlsen';
@@ -2702,23 +2716,16 @@ app.get('/api/debug/search-player', (req, res) => {
     return res.json({ error: 'Database not connected' });
   }
 
-  const query = `
-    SELECT White as player, COUNT(*) as games
-    FROM games
-    WHERE White LIKE ?
-    GROUP BY White
-    ORDER BY games DESC
-    LIMIT 10
-  `;
-
-  db.all(query, [`%${searchName}%`], (err, rows) => {
-    if (err) {
-      return res.json({ error: err.message });
+  // Get table schema first
+  db.all("PRAGMA table_info(games)", [], (schemaErr, columns) => {
+    if (schemaErr) {
+      return res.json({ error: 'Schema error: ' + schemaErr.message });
     }
+
+    const columnNames = columns.map(c => c.name);
     res.json({
-      searchTerm: searchName,
-      results: rows,
-      count: rows.length
+      availableColumns: columnNames,
+      message: 'Use /api/debug/schema for full schema details'
     });
   });
 });
