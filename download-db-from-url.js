@@ -92,12 +92,19 @@ function downloadFile(url) {
 
       writeStream.on('finish', () => {
         writeStream.close();
-        const elapsed = formatTime(Date.now() - startTime);
-        const finalSize = formatBytes(downloaded);
-        console.log(`\n\n✅ Download complete!`);
-        console.log(`   Size: ${finalSize}`);
-        console.log(`   Time: ${elapsed}`);
-        console.log(`   Location: ${DB_PATH}\n`);
+
+        // Set file permissions to readable
+        try {
+          fs.chmodSync(DB_PATH, 0o644);
+          console.log('\n\n✅ Download complete!');
+          console.log(`   Size: ${formatBytes(downloaded)}`);
+          console.log(`   Time: ${formatTime(Date.now() - startTime)}`);
+          console.log(`   Location: ${DB_PATH}`);
+          console.log(`   Permissions: 644 (readable)\n`);
+        } catch (err) {
+          console.warn('   Warning: Could not set permissions:', err.message);
+        }
+
         resolve();
       });
 
