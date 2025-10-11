@@ -2738,11 +2738,13 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
           if (err) resolve([]);
           else resolve(rows.map(r => ({
             eco: r.eco,
-            name: r.opening,
+            opening: r.opening, // Frontend expects "opening" not "name"
+            name: r.opening, // Keep for backwards compat
             games: r.games,
             wins: r.wins,
             draws: r.draws,
             losses: r.games - r.wins - r.draws,
+            winRate: ((r.wins / r.games) * 100).toFixed(1),
             performanceScore: ((r.wins + r.draws * 0.5) / r.games * 100).toFixed(1)
           })));
         });
@@ -2754,11 +2756,13 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
           if (err) resolve([]);
           else resolve(rows.map(r => ({
             eco: r.eco,
-            name: r.opening,
+            opening: r.opening, // Frontend expects "opening" not "name"
+            name: r.opening, // Keep for backwards compat
             games: r.games,
             wins: r.wins,
             draws: r.draws,
             losses: r.games - r.wins - r.draws,
+            winRate: ((r.wins / r.games) * 100).toFixed(1),
             performanceScore: ((r.wins + r.draws * 0.5) / r.games * 100).toFixed(1)
           })));
         });
@@ -2776,26 +2780,75 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
 
       const whiteStats = await new Promise((resolve) => {
         db.get(colorQuery, [playerData], (err, row) => {
-          if (err || !row) resolve({ games: 0, wins: 0, draws: 0, losses: 0 });
-          else resolve({
-            games: row.games,
-            wins: row.wins,
-            draws: row.draws,
-            losses: row.games - row.wins - row.draws
-          });
+          if (err || !row) resolve({ games: 0, wins: 0, draws: 0, losses: 0, winRate: "0", performanceScore: "0" });
+          else {
+            const games = row.games;
+            const wins = row.wins;
+            const draws = row.draws;
+            const losses = games - wins - draws;
+            resolve({
+              games,
+              wins,
+              draws,
+              losses,
+              winRate: games > 0 ? ((wins / games) * 100).toFixed(1) : "0",
+              performanceScore: games > 0 ? (((wins + draws * 0.5) / games) * 100).toFixed(1) : "0"
+            });
+          }
         });
       });
 
       const blackQuery = colorQuery.replace('white_player =', 'black_player =').replace("result = '1-0'", "result = '0-1'");
       const blackStats = await new Promise((resolve) => {
         db.get(blackQuery, [playerData], (err, row) => {
-          if (err || !row) resolve({ games: 0, wins: 0, draws: 0, losses: 0 });
-          else resolve({
-            games: row.games,
-            wins: row.wins,
-            draws: row.draws,
-            losses: row.games - row.wins - row.draws
-          });
+          if (err || !row) resolve({ games: 0, wins: 0, draws: 0, losses: 0, winRate: "0", performanceScore: "0" });
+          else {
+            const games = row.games;
+            const wins = row.wins;
+            const draws = row.draws;
+            const losses = games - wins - draws;
+            resolve({
+              games,
+              wins,
+              draws,
+              losses,
+              winRate: games > 0 ? ((wins / games) * 100).toFixed(1) : "0",
+              performanceScore: games > 0 ? (((wins + draws * 0.5) / games) * 100).toFixed(1) : "0"
+            });
+          }
+        });
+      });
+
+      // Get top opponents
+      const opponentsQuery = `
+        SELECT opponent, COUNT(*) as games,
+               SUM(CASE WHEN player_result = 1 THEN 1 ELSE 0 END) as wins,
+               SUM(CASE WHEN player_result = 0.5 THEN 1 ELSE 0 END) as draws
+        FROM (
+          SELECT black_player as opponent,
+                 CASE WHEN result = '1-0' THEN 1 WHEN result = '1/2-1/2' THEN 0.5 ELSE 0 END as player_result
+          FROM games WHERE white_player = ?
+          UNION ALL
+          SELECT white_player as opponent,
+                 CASE WHEN result = '0-1' THEN 1 WHEN result = '1/2-1/2' THEN 0.5 ELSE 0 END as player_result
+          FROM games WHERE black_player = ?
+        )
+        GROUP BY opponent
+        ORDER BY games DESC
+        LIMIT 20
+      `;
+
+      const topOpponents = await new Promise((resolve) => {
+        db.all(opponentsQuery, [playerData, playerData], (err, rows) => {
+          if (err) resolve([]);
+          else resolve(rows.map(r => ({
+            name: r.opponent,
+            games: r.games,
+            wins: r.wins,
+            draws: r.draws,
+            losses: r.games - r.wins - r.draws,
+            performanceScore: ((r.wins + r.draws * 0.5) / r.games * 100).toFixed(1)
+          })));
         });
       });
 
@@ -2824,6 +2877,12 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
         openings: {
           asWhite: asWhiteOpenings,
           asBlack: asBlackOpenings
+        },
+        topOpponents,
+        opponentStats: topOpponents, // Alias for frontend compatibility
+        opponentRatings: [], // Would need rating data
+        vsElite: {
+          vsTop10: { games: 0, wins: 0, draws: 0, losses: 0 }
         }
       });
     });
