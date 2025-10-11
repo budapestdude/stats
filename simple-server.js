@@ -177,30 +177,36 @@ if (fs.existsSync(dbPath)) {
       db = null; // Clear the database connection
     } else {
       console.log(`✅ Connected to main database (${dbName} with ${isSubset ? '500k' : '9.1M'} games)`);
-      // Get actual stats from database
-      db.get('SELECT COUNT(*) as count FROM games', (err, row) => {
-        if (!err && row) {
-          console.log(`   Database contains ${row.count.toLocaleString()} games`);
-        }
-      });
+      // Skip count query - it requires temp files and may cause SQLITE_CANTOPEN on Railway
+      // The database is ready to use for API queries
+      console.log('   Database ready for queries\n');
     }
+  });
+
+  // Handle database errors that occur after connection
+  db.on('error', (err) => {
+    console.error('❌ Database error:', err.message);
   });
 }
 
-// Connect to moves database  
+// Connect to moves database (optional - contains move-by-move data)
 if (fs.existsSync(movesDbPath)) {
   movesDb = new sqlite3.Database(movesDbPath, sqlite3.OPEN_READONLY, (err) => {
     if (err) {
-      console.error('Error opening moves database:', err);
+      console.error('❌ Error opening moves database:', err.message);
+      console.log('⚠️  Server will continue without moves database\n');
+      movesDb = null;
     } else {
-      console.log('Connected to moves database (chess-stats.db with actual moves)');
-      movesDb.get('SELECT COUNT(*) as count FROM games', (err, row) => {
-        if (!err && row) {
-          console.log(`Moves database contains ${row.count.toLocaleString()} games with moves`);
-        }
-      });
+      console.log('✅ Connected to moves database');
+      console.log('   Moves database ready for queries\n');
     }
   });
+
+  movesDb.on('error', (err) => {
+    console.error('❌ Moves database error:', err.message);
+  });
+} else {
+  console.log('ℹ️  Moves database not found, skipping\n');
 }
 
 // Test endpoint
