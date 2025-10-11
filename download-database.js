@@ -1,10 +1,13 @@
 // Download database from Google Drive on Railway startup
 const https = require('https');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { URL } = require('url');
 
 const DB_PATH = path.join(__dirname, 'otb-database', 'complete-tournaments.db');
 const GOOGLE_DRIVE_FILE_ID = process.env.GOOGLE_DRIVE_FILE_ID; // Set in Railway env vars
+const GOOGLE_DRIVE_URL = process.env.GOOGLE_DRIVE_URL; // Optional: full URL instead of File ID
 
 console.log('🔍 Checking for database...\n');
 
@@ -17,18 +20,25 @@ if (fs.existsSync(DB_PATH)) {
   process.exit(0);
 }
 
-// Check if Google Drive file ID is set
-if (!GOOGLE_DRIVE_FILE_ID) {
-  console.log('⚠️  GOOGLE_DRIVE_FILE_ID not set');
+// Check if Google Drive file ID or URL is set
+if (!GOOGLE_DRIVE_FILE_ID && !GOOGLE_DRIVE_URL) {
+  console.log('⚠️  GOOGLE_DRIVE_FILE_ID or GOOGLE_DRIVE_URL not set');
   console.log('   Using fallback database if available.\n');
   process.exit(0);
 }
 
 console.log('📥 Downloading database from Google Drive...');
-console.log(`   File ID: ${GOOGLE_DRIVE_FILE_ID}\n`);
 
-// Google Drive direct download URL with confirmation bypass for large files
-const downloadUrl = `https://drive.google.com/uc?export=download&id=${GOOGLE_DRIVE_FILE_ID}&confirm=t`;
+// Determine download URL
+let downloadUrl;
+if (GOOGLE_DRIVE_URL) {
+  console.log(`   Using custom URL\n`);
+  downloadUrl = GOOGLE_DRIVE_URL;
+} else {
+  console.log(`   File ID: ${GOOGLE_DRIVE_FILE_ID}\n`);
+  // Try alternative Google Drive URL formats
+  downloadUrl = `https://drive.usercontent.google.com/download?id=${GOOGLE_DRIVE_FILE_ID}&confirm=t`;
+}
 
 // Create otb-database directory if it doesn't exist
 const dbDir = path.dirname(DB_PATH);
@@ -53,7 +63,10 @@ function formatTime(ms) {
 
 function downloadFile(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, (response) => {
+    const parsedUrl = new URL(url);
+    const protocol = parsedUrl.protocol === 'https:' ? https : http;
+
+    protocol.get(url, (response) => {
       // Handle all redirect status codes (301, 302, 303, 307, 308)
       if (response.statusCode >= 300 && response.statusCode < 400) {
         const redirectUrl = response.headers.location;
