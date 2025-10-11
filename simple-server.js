@@ -114,12 +114,12 @@ app.use(express.json());
 let db = null; // Main database
 let movesDb = null; // Smaller database with moves
 
-// Database path priority: Volume > Railway subset > Full local
+// Database path priority: Volume > Full local > Railway subset fallback
 const volumeDbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
-  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'railway-subset.db')
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'complete-tournaments.db')
   : null;
-const railwayDbPath = path.join(__dirname, 'otb-database', 'railway-subset.db');
 const fullDbPath = path.join(__dirname, 'otb-database', 'complete-tournaments.db');
+const railwayDbPath = path.join(__dirname, 'otb-database', 'railway-subset.db');
 
 // Debug logging
 console.log('🔍 Database path debug:');
