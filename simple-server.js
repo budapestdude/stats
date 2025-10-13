@@ -7,16 +7,38 @@ const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
 
 // Optional OTB analysis modules (don't crash if missing)
-let OTBDatabaseManager, PGNParser, GameMovesLoader, AdvancedChessAnalyzer, HistoricalChessAnalyzer;
+let OTBDatabaseManager, PGNParser, GameMovesLoader, AdvancedChessAnalyzer, HistoricalChessAnalyzer, PGNExtractor;
 try {
   OTBDatabaseManager = require('./otb-database/download-manager');
   PGNParser = require('./otb-database/pgn-parser');
   GameMovesLoader = require('./otb-database/game-moves-loader');
   AdvancedChessAnalyzer = require('./otb-database/advanced-analyzer');
   HistoricalChessAnalyzer = require('./otb-database/historical-analyzer');
+  PGNExtractor = require('./otb-database/pgn-extractor');
 } catch (err) {
   console.warn('⚠️  OTB analysis modules not available:', err.message);
   console.log('   Server will continue with limited functionality\n');
+}
+
+// Initialize PGN extractor for on-demand move extraction
+let pgnExtractor = null;
+const pgnCache = new Map(); // In-memory cache for extracted PGN moves
+const MAX_CACHE_SIZE = 10000; // Cache up to 10k most recently accessed games
+
+if (PGNExtractor) {
+  pgnExtractor = new PGNExtractor();
+  console.log('✅ PGN extractor initialized for on-demand move extraction');
+  console.log(`   Cache size: ${MAX_CACHE_SIZE} games\n`);
+}
+
+// Helper function to manage cache size (LRU-style)
+function addToCache(key, value) {
+  // If cache is full, remove oldest entry
+  if (pgnCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = pgnCache.keys().next().value;
+    pgnCache.delete(firstKey);
+  }
+  pgnCache.set(key, value);
 }
 
 // Global error handlers to prevent crashes
@@ -341,15 +363,18 @@ app.get('/api/openings', async (req, res) => {
   try {
     const query = `
       SELECT
-        eco,
-        opening as name,
+        SUBSTR(eco, 1, 3) as eco,
+        CASE
+          WHEN opening IS NOT NULL AND opening != '' THEN opening
+          ELSE 'Unknown Opening'
+        END as name,
         COUNT(*) as games,
         ROUND(SUM(CASE WHEN result = '1-0' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as whiteWins,
         ROUND(SUM(CASE WHEN result = '1/2-1/2' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as draws,
         ROUND(SUM(CASE WHEN result = '0-1' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as blackWins
       FROM games
-      WHERE eco IS NOT NULL AND opening IS NOT NULL
-      GROUP BY eco, opening
+      WHERE eco IS NOT NULL AND eco != ''
+      GROUP BY SUBSTR(eco, 1, 3)
       ORDER BY games DESC
       LIMIT 50
     `;
@@ -591,98 +616,55 @@ app.get('/api/tournaments/lichess', async (req, res) => {
 
 // Get tournaments
 app.get('/api/tournaments', (req, res) => {
-  res.json({
-    upcoming: [
-      {
-        id: 1,
-        name: 'Tata Steel Chess Tournament 2024',
-        location: 'Wijk aan Zee, Netherlands',
-        startDate: '2024-01-13',
-        endDate: '2024-01-28',
-        format: 'Round Robin',
-        category: 21,
-        players: 14,
-        prize: '$100,000',
-        status: 'upcoming'
-      },
-      {
-        id: 2,
-        name: 'Candidates Tournament 2024',
-        location: 'Toronto, Canada',
-        startDate: '2024-04-03',
-        endDate: '2024-04-22',
-        format: 'Double Round Robin',
-        category: 22,
-        players: 8,
-        prize: '$500,000',
-        status: 'upcoming'
-      },
-      {
-        id: 3,
-        name: 'Norway Chess 2024',
-        location: 'Stavanger, Norway',
-        startDate: '2024-05-27',
-        endDate: '2024-06-07',
-        format: 'Round Robin',
-        category: 21,
-        players: 10,
-        prize: '$200,000',
-        status: 'upcoming'
-      }
-    ],
-    ongoing: [
-      {
-        id: 4,
-        name: 'Chess.com Rapid Championship',
-        location: 'Online',
-        startDate: '2024-01-08',
-        endDate: '2024-01-10',
-        format: 'Swiss',
-        rounds: 11,
-        players: 256,
-        prize: '$50,000',
-        status: 'ongoing',
-        currentRound: 7
-      },
-      {
-        id: 5,
-        name: 'Titled Tuesday',
-        location: 'Online',
-        startDate: '2024-01-09',
-        endDate: '2024-01-09',
-        format: 'Swiss',
-        rounds: 11,
-        players: 512,
-        prize: '$5,000',
-        status: 'ongoing',
-        currentRound: 5
-      }
-    ],
-    recent: [
-      {
-        id: 6,
-        name: 'World Chess Championship 2023',
-        location: 'Astana, Kazakhstan',
-        startDate: '2023-04-07',
-        endDate: '2023-05-01',
-        format: 'Match',
-        winner: 'Ding Liren',
-        runnerUp: 'Ian Nepomniachtchi',
-        prize: '$2,000,000',
-        status: 'completed'
-      },
-      {
-        id: 7,
-        name: 'Sinquefield Cup 2023',
-        location: 'St. Louis, USA',
-        startDate: '2023-08-20',
-        endDate: '2023-08-31',
-        format: 'Round Robin',
-        winner: 'Fabiano Caruana',
-        prize: '$350,000',
-        status: 'completed'
-      }
-    ]
+  if (!db) {
+    return res.json({ upcoming: [], ongoing: [], recent: [] });
+  }
+
+  // Query recent tournaments from database (last 2 years)
+  const query = `
+    SELECT
+      tournament_name as name,
+      MIN(date) as startDate,
+      MAX(date) as endDate,
+      COUNT(*) as games,
+      COUNT(DISTINCT white_player) + COUNT(DISTINCT black_player) as totalPlayers
+    FROM games
+    WHERE tournament_name IS NOT NULL
+      AND tournament_name != ''
+      AND tournament_name != '?'
+      AND date >= '2023-01-01'
+    GROUP BY tournament_name
+    HAVING games > 10
+    ORDER BY startDate DESC
+    LIMIT 50
+  `;
+
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Error fetching tournaments:', err);
+      return res.json({ upcoming: [], ongoing: [], recent: [] });
+    }
+
+    const tournaments = rows.map((row, index) => ({
+      id: index + 1,
+      name: row.name,
+      startDate: row.startDate,
+      endDate: row.endDate,
+      games: row.games,
+      players: Math.floor(row.totalPlayers / 2), // Rough estimate
+      status: 'completed'
+    }));
+
+    // Split into recent (2024+) and older
+    const recent = tournaments.filter(t => t.startDate >= '2024-01-01');
+    const older = tournaments.filter(t => t.startDate < '2024-01-01');
+
+    res.json({
+      upcoming: [], // No upcoming tournaments in historical database
+      ongoing: [], // No ongoing tournaments in historical database
+      recent: recent.slice(0, 20),
+      historical: older.slice(0, 30)
+    });
   });
 });
 
@@ -695,38 +677,30 @@ app.get('/api/tournaments/top', (req, res) => {
       { name: 'Tata Steel Chess', games_count: 876 }
     ]);
   }
-  
-  db.all(`
-    SELECT name, 
-           CASE 
-             WHEN games_count LIKE '%[object Object]%' THEN RANDOM() % 1000 + 50
-             ELSE CAST(games_count AS INTEGER)
-           END as games_count,
-           location,
-           start_date
-    FROM events 
-    WHERE name IS NOT NULL 
-      AND name != '' 
-      AND name != '?'
-      AND LENGTH(name) > 3
-    ORDER BY 
-      CASE 
-        WHEN games_count LIKE '%[object Object]%' THEN RANDOM() % 1000 + 50
-        ELSE CAST(games_count AS INTEGER)
-      END DESC 
+
+  // Query real tournament data from games table
+  const query = `
+    SELECT
+      tournament_name as name,
+      COUNT(*) as games_count,
+      MIN(date) as start_date,
+      MAX(date) as end_date
+    FROM games
+    WHERE tournament_name IS NOT NULL
+      AND tournament_name != ''
+      AND tournament_name != '?'
+      AND LENGTH(tournament_name) > 3
+    GROUP BY tournament_name
+    ORDER BY games_count DESC
     LIMIT 50
-  `, (err, rows) => {
+  `;
+
+  db.all(query, [], (err, rows) => {
     if (err) {
+      console.error('Error fetching top tournaments:', err);
       return res.status(500).json({ error: err.message });
     }
-    // Format the results properly and generate reasonable game counts
-    const formattedRows = rows.map((row, index) => ({
-      name: row.name.trim(),
-      games_count: row.games_count === '[object Object]' ? Math.floor(Math.random() * 800) + 100 : (parseInt(row.games_count) || 0),
-      location: row.location || null,
-      start_date: row.start_date || null
-    }));
-    res.json(formattedRows);
+    res.json(rows);
   });
 });
 
@@ -882,120 +856,251 @@ app.get('/api/tournaments/:name', (req, res) => {
 
 // Search games
 app.get('/api/games/search', (req, res) => {
-  const { 
-    player, 
-    opening, 
-    result, 
-    minRating, 
+  const {
+    player,
+    opening,
+    result,
+    minRating,
     maxRating,
     timeControl,
     dateFrom,
     dateTo,
     page = 1,
-    limit = 20 
+    limit = 20
   } = req.query;
 
-  // Generate mock game data based on filters
-  const games = [];
-  const totalGames = 15423; // Mock total
-  
-  for (let i = 0; i < limit; i++) {
-    const gameNum = (page - 1) * limit + i + 1;
-    if (gameNum > totalGames) break;
-    
-    const results = ['1-0', '0-1', '1/2-1/2'];
-    const openings = [
-      { eco: 'C50', name: 'Italian Game' },
-      { eco: 'B10', name: 'Caro-Kann Defense' },
-      { eco: 'D02', name: 'London System' },
-      { eco: 'A04', name: 'Reti Opening' },
-      { eco: 'B01', name: 'Scandinavian Defense' }
-    ];
-    const timeControls = ['blitz', 'rapid', 'bullet', 'classical'];
-    const players = ['Hikaru', 'MagnusCarlsen', 'FabianoCaruana', 'DingLiren', 'Nepo', 'AlirезаFirouzja'];
-    
-    games.push({
-      id: `game_${gameNum}`,
-      white: players[Math.floor(Math.random() * players.length)],
-      black: players[Math.floor(Math.random() * players.length)],
-      result: result || results[Math.floor(Math.random() * results.length)],
-      whiteRating: minRating ? parseInt(minRating) + Math.floor(Math.random() * 200) : 2000 + Math.floor(Math.random() * 800),
-      blackRating: minRating ? parseInt(minRating) + Math.floor(Math.random() * 200) : 2000 + Math.floor(Math.random() * 800),
-      opening: opening || openings[Math.floor(Math.random() * openings.length)],
-      timeControl: timeControl || timeControls[Math.floor(Math.random() * timeControls.length)],
-      moves: 30 + Math.floor(Math.random() * 60),
-      date: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-      tournament: Math.random() > 0.7 ? 'Titled Tuesday' : null,
-      pgn: '1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5 4.c3 Nf6 5.d4 exd4 6.cxd4...'
-    });
+  if (!db) {
+    return res.status(500).json({ error: 'Database not connected' });
   }
 
-  res.json({
-    games,
-    pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      total: totalGames,
-      pages: Math.ceil(totalGames / limit)
-    },
-    filters: {
-      player,
-      opening,
-      result,
-      minRating,
-      maxRating,
-      timeControl,
-      dateFrom,
-      dateTo
+  // Build WHERE conditions
+  const conditions = [];
+  const params = [];
+
+  if (player) {
+    conditions.push('(white_player LIKE ? OR black_player LIKE ?)');
+    params.push(`%${player}%`, `%${player}%`);
+  }
+
+  if (opening) {
+    conditions.push('SUBSTR(eco, 1, 3) = ?');
+    params.push(opening.toUpperCase());
+  }
+
+  if (result) {
+    conditions.push('result = ?');
+    params.push(result);
+  }
+
+  if (dateFrom) {
+    conditions.push('date >= ?');
+    params.push(dateFrom);
+  }
+
+  if (dateTo) {
+    conditions.push('date <= ?');
+    params.push(dateTo);
+  }
+
+  const whereClause = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+
+  // Get total count
+  const countQuery = `SELECT COUNT(*) as total FROM games ${whereClause}`;
+
+  db.get(countQuery, params, (err, countRow) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
     }
+
+    const total = countRow.total;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get games with pagination
+    const gamesQuery = `
+      SELECT
+        id,
+        white_player as white,
+        black_player as black,
+        result,
+        date,
+        SUBSTR(eco, 1, 3) as eco,
+        CASE
+          WHEN opening IS NOT NULL AND opening != '' THEN opening
+          ELSE 'Unknown Opening'
+        END as opening_name,
+        tournament_name as tournament,
+        round,
+        ply_count as moves
+      FROM games
+      ${whereClause}
+      ORDER BY date DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    db.all(gamesQuery, [...params, parseInt(limit), offset], (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      const games = rows.map(row => ({
+        id: row.id,
+        white: row.white,
+        black: row.black,
+        result: row.result,
+        opening: {
+          eco: row.eco,
+          name: row.opening_name
+        },
+        date: row.date,
+        tournament: row.tournament,
+        round: row.round,
+        moves: row.moves || null,
+        // Note: PGN moves not stored in database, would need extraction from source files
+        pgn: null
+      }));
+
+      res.json({
+        games,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / parseInt(limit))
+        },
+        filters: {
+          player,
+          opening,
+          result,
+          dateFrom,
+          dateTo
+        }
+      });
+    });
   });
 });
 
 // Get game by ID
 app.get('/api/games/:id', (req, res) => {
   const { id } = req.params;
-  
-  res.json({
-    id,
-    white: 'MagnusCarlsen',
-    black: 'Hikaru',
-    whiteRating: 2839,
-    blackRating: 2802,
-    result: '1-0',
-    opening: { eco: 'C50', name: 'Italian Game', variation: 'Classical Variation' },
-    timeControl: 'rapid',
-    timeClass: '10+0',
-    date: '2024-01-15T14:30:00Z',
-    tournament: 'Tata Steel Masters 2024',
-    round: 7,
-    moves: 41,
-    termination: 'resignation',
-    pgn: `[Event "Tata Steel Masters 2024"]
-[Site "Wijk aan Zee NED"]
-[Date "2024.01.15"]
-[Round "7"]
-[White "Magnus Carlsen"]
-[Black "Hikaru Nakamura"]
-[Result "1-0"]
-[WhiteElo "2839"]
-[BlackElo "2802"]
-[ECO "C50"]
 
-1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5 4.c3 Nf6 5.d4 exd4 6.cxd4 Bb4+ 7.Bd2 Bxd2+ 
-8.Nbxd2 d5 9.exd5 Nxd5 10.Qb3 Na5 11.Qa4+ Nc6 12.Qb3 Na5 13.Qa4+ Nc6 
-14.O-O O-O 15.Rfe1 Nb6 16.Qd1 Nxc4 17.Nxc4 Be6 18.Nce5 Nxe5 19.Nxe5 c6 
-20.Qf3 Qb6 21.Rad1 Rad8 22.h3 Rd5 23.Qg3 Rfd8 24.Rd2 Qb4 25.Red1 Qb1 
-26.Qf4 Qxd1+ 27.Rxd1 f6 28.Ng4 Kf7 29.Ne3 R5d7 30.Nc4 Ke7 31.Nb6 Rd6 
-32.Nc4 Rd5 33.Ne3 R5d7 34.Qh4 h6 35.Qf4 Rd6 36.Nc4 R6d7 37.Qc1 Kf7 
-38.Qc3 Rd5 39.Re1 R8d7 40.Ne3 Rxd4 41.Qc5 1-0`,
-    analysis: {
-      accuracy: { white: 94.2, black: 87.6 },
-      brilliantMoves: 1,
-      blunders: 0,
-      mistakes: { white: 1, black: 2 },
-      inaccuracies: { white: 2, black: 4 },
-      averagecentipawnloss: { white: 12, black: 28 }
+  if (!db) {
+    return res.status(500).json({ error: 'Database not connected' });
+  }
+
+  db.get(`
+    SELECT
+      id,
+      white_player as white,
+      black_player as black,
+      result,
+      date,
+      SUBSTR(eco, 1, 3) as eco,
+      CASE
+        WHEN opening IS NOT NULL AND opening != '' THEN opening
+        ELSE 'Unknown Opening'
+      END as opening_name,
+      tournament_name as tournament,
+      round,
+      ply_count as moves,
+      pgn_file,
+      pgn_moves
+    FROM games
+    WHERE id = ?
+  `, [id], (err, row) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
     }
+
+    if (!row) {
+      return res.status(404).json({ error: 'Game not found' });
+    }
+
+    // 3-tier PGN lookup system: Database column → Cache → chess-stats.db → File extraction
+    const getPGNMoves = async () => {
+      // Tier 1: Check if pgn_moves is already in database (fastest - instant)
+      if (row.pgn_moves) {
+        return { moves: row.pgn_moves, source: 'database', whiteElo: null, blackElo: null };
+      }
+
+      // Tier 2: Check in-memory cache (very fast - <1ms)
+      const cacheKey = `${row.white}|${row.black}|${row.result}|${row.date}`;
+      if (pgnCache.has(cacheKey)) {
+        return { moves: pgnCache.get(cacheKey), source: 'cache', whiteElo: null, blackElo: null };
+      }
+
+      // Tier 3: Check chess-stats.db (fast - <50ms)
+      if (movesDb) {
+        const datePattern = row.date ? row.date.substring(0, 10).replace(/\./g, '-') : null;
+        const movesRow = await new Promise((resolve) => {
+          movesDb.get(`
+            SELECT moves, white_elo, black_elo
+            FROM games
+            WHERE white = ? AND black = ? AND result = ?
+            ${datePattern ? 'AND (date = ? OR date LIKE ?)' : ''}
+            LIMIT 1
+          `, datePattern
+            ? [row.white, row.black, row.result, datePattern, datePattern + '%']
+            : [row.white, row.black, row.result],
+          (err, row) => resolve(row));
+        });
+
+        if (movesRow?.moves) {
+          addToCache(cacheKey, movesRow.moves);
+          return { moves: movesRow.moves, source: 'chess-stats-db', whiteElo: movesRow.white_elo, blackElo: movesRow.black_elo };
+        }
+      }
+
+      // Tier 4: Extract from PGN file (slow - 10-20s)
+      if (pgnExtractor && row.pgn_file) {
+        try {
+          console.log(`[PGN Extract] Game ${row.id} from ${row.pgn_file}...`);
+          const pgnMoves = await pgnExtractor.extractGame(
+            row.pgn_file,
+            row.white,
+            row.black,
+            row.result,
+            row.date
+          );
+          if (pgnMoves) {
+            addToCache(cacheKey, pgnMoves);
+            console.log(`✅ [PGN Extract] Game ${row.id} extracted and cached`);
+            return { moves: pgnMoves, source: 'file-extraction', whiteElo: null, blackElo: null };
+          }
+        } catch (err) {
+          console.error(`❌ [PGN Extract] Game ${row.id} error:`, err.message);
+        }
+      }
+
+      return { moves: null, source: 'not-found', whiteElo: null, blackElo: null };
+    };
+
+    // Get PGN moves using 3-tier system
+    getPGNMoves().then(({ moves: pgnMoves, source, whiteElo, blackElo }) => {
+
+      const gameData = {
+        id: row.id,
+        white: row.white,
+        black: row.black,
+        result: row.result,
+        opening: {
+          eco: row.eco,
+          name: row.opening_name
+        },
+        date: row.date,
+        tournament: row.tournament,
+        round: row.round,
+        moves: row.moves || null,
+        pgn: pgnMoves,
+        whiteElo,
+        blackElo,
+        pgnFile: row.pgn_file
+      };
+
+      res.json(gameData);
+    }).catch(err => {
+      console.error('Error fetching game:', err);
+      res.status(500).json({ error: err.message });
+    });
   });
 });
 
@@ -2717,20 +2822,24 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
       });
 
       // Get openings stats
+      // Note: ECO codes in DB are extended (e.g., C65j). We strip to base ECO (C65)
       const openingsQuery = `
         SELECT
-          eco,
-          opening,
+          SUBSTR(eco, 1, 3) as eco,
+          CASE
+            WHEN opening IS NOT NULL AND opening != '' THEN opening
+            ELSE 'Unknown Opening'
+          END as opening,
           COUNT(*) as games,
           SUM(CASE WHEN (white_player = ? AND result = '1-0') OR (black_player = ? AND result = '0-1') THEN 1 ELSE 0 END) as wins,
           SUM(CASE WHEN result = '1/2-1/2' THEN 1 ELSE 0 END) as draws
         FROM games
         WHERE white_player = ?
           AND eco IS NOT NULL
-          AND opening IS NOT NULL
-        GROUP BY eco, opening
+          AND eco != ''
+        GROUP BY SUBSTR(eco, 1, 3)
         ORDER BY games DESC
-        LIMIT 10
+        LIMIT 15
       `;
 
       const asWhiteOpenings = await new Promise((resolve) => {
@@ -3065,38 +3174,30 @@ app.get('/api/tournaments/top', (req, res) => {
       { name: 'Tata Steel Chess', games_count: 876 }
     ]);
   }
-  
-  db.all(`
-    SELECT name, 
-           CASE 
-             WHEN games_count LIKE '%[object Object]%' THEN RANDOM() % 1000 + 50
-             ELSE CAST(games_count AS INTEGER)
-           END as games_count,
-           location,
-           start_date
-    FROM events 
-    WHERE name IS NOT NULL 
-      AND name != '' 
-      AND name != '?'
-      AND LENGTH(name) > 3
-    ORDER BY 
-      CASE 
-        WHEN games_count LIKE '%[object Object]%' THEN RANDOM() % 1000 + 50
-        ELSE CAST(games_count AS INTEGER)
-      END DESC 
+
+  // Query real tournament data from games table
+  const query = `
+    SELECT
+      tournament_name as name,
+      COUNT(*) as games_count,
+      MIN(date) as start_date,
+      MAX(date) as end_date
+    FROM games
+    WHERE tournament_name IS NOT NULL
+      AND tournament_name != ''
+      AND tournament_name != '?'
+      AND LENGTH(tournament_name) > 3
+    GROUP BY tournament_name
+    ORDER BY games_count DESC
     LIMIT 50
-  `, (err, rows) => {
+  `;
+
+  db.all(query, [], (err, rows) => {
     if (err) {
+      console.error('Error fetching top tournaments:', err);
       return res.status(500).json({ error: err.message });
     }
-    // Format the results properly and generate reasonable game counts
-    const formattedRows = rows.map((row, index) => ({
-      name: row.name.trim(),
-      games_count: row.games_count === '[object Object]' ? Math.floor(Math.random() * 800) + 100 : (parseInt(row.games_count) || 0),
-      location: row.location || null,
-      start_date: row.start_date || null
-    }));
-    res.json(formattedRows);
+    res.json(rows);
   });
 });
 
