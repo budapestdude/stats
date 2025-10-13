@@ -3234,7 +3234,7 @@ function generateMockStats() {
 }
 
 // Tournament API endpoints
-const tournamentDb = new sqlite3.Database('./otb-database/chess-stats.db', sqlite3.OPEN_READONLY);
+// Use the main db connection instead of a separate tournamentDb
 
 // Get tournaments list with filtering
 app.get('/api/tournaments', async (req, res) => {
@@ -3281,7 +3281,7 @@ app.get('/api/tournaments', async (req, res) => {
     query += ` ORDER BY ${safeSort} ${safeOrder} LIMIT ? OFFSET ?`;
     params.push(parseInt(limit), parseInt(offset));
     
-    tournamentDb.all(query, params, (err, rows) => {
+    db.all(query, params, (err, rows) => {
       if (err) {
         console.error('Tournament query error:', err);
         res.status(500).json({ error: 'Failed to fetch tournaments' });
@@ -3302,7 +3302,7 @@ app.get('/api/tournaments', async (req, res) => {
         countParams.push(`%${site}%`);
       }
       
-      tournamentDb.get(countQuery, countParams, (err, countRow) => {
+      db.get(countQuery, countParams, (err, countRow) => {
         if (err) {
           console.error('Tournament count error:', err);
         }
@@ -3327,7 +3327,7 @@ app.get('/api/tournaments/:id', async (req, res) => {
     const { id } = req.params;
     
     // Get tournament basic info
-    tournamentDb.get('SELECT * FROM tournaments WHERE id = ?', [id], (err, tournament) => {
+    db.get('SELECT * FROM tournaments WHERE id = ?', [id], (err, tournament) => {
       if (err) {
         console.error('Tournament detail error:', err);
         res.status(500).json({ error: 'Failed to fetch tournament' });
@@ -3340,7 +3340,7 @@ app.get('/api/tournaments/:id', async (req, res) => {
       }
       
       // Get games for this tournament
-      tournamentDb.all(`
+      db.all(`
         SELECT 
           white, black, result, round, date,
           white_elo, black_elo, eco, opening
