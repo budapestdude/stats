@@ -1,149 +1,398 @@
-# Chess Stats - The Ultimate Chess Statistics Platform
+# ♟️ Chess Stats - The Ultimate Chess Statistics Platform
 
-A comprehensive web application for chess statistics, player analysis, opening exploration, and tournament tracking.
+[![Production Status](https://img.shields.io/badge/status-production-success)](https://invigorating-solace-production.up.railway.app)
+[![Database](https://img.shields.io/badge/games-9.1M-blue)](https://github.com/budapestdude/stats)
+[![Node.js](https://img.shields.io/badge/node-20%2B-brightgreen)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
 
-## Features
+A comprehensive web application for chess statistics, player analysis, opening exploration, and tournament tracking. Features 9.1 million OTB (Over-the-Board) tournament games, real-time Chess.com and Lichess integration, and powerful analytics.
 
-- **Player Statistics**: Detailed player profiles with rating history, performance metrics, and head-to-head comparisons
-- **Opening Explorer**: Interactive opening database with statistics and master game references
-- **Game Database**: Search and analyze millions of chess games
-- **Tournament Tracking**: Live and historical tournament data with standings and results
-- **Data Visualization**: Interactive charts and graphs for rating progression, opening trends, and performance analytics
-- **API Access**: RESTful API for developers to access chess statistics programmatically
+🌐 **Live**: [Production Frontend](https://invigorating-solace-production.up.railway.app) | [API](https://stats-production-10e3.up.railway.app)
 
-## Tech Stack
+---
 
-- **Backend**: Node.js with Express and TypeScript
-- **Database**: PostgreSQL for relational data, Redis for caching
-- **Frontend**: Next.js with React (to be implemented)
-- **APIs**: Integration with Chess.com and Lichess APIs
+## ✨ Features
 
-## Prerequisites
+### 🎯 Core Features
+- **9.1M Game Database**: Complete OTB tournament games from 1851-2025
+- **Player Analytics**: Comprehensive statistics for 442K+ players
+- **Opening Explorer**: Opening statistics with 100% ECO code coverage
+- **Tournament Data**: 18K tournaments with detailed standings and games
+- **Real-time Data**: Live Chess.com and Lichess API integration
+- **Advanced Search**: Filter by player, opening, date, result, and more
 
-- Node.js 16+ 
-- PostgreSQL 13+
-- Redis 6+
-- npm or yarn
+### 📊 Analytics & Visualization
+- Player performance trends by year and color
+- Head-to-head statistics with top opponents
+- Opening repertoire analysis
+- Win/Draw/Loss distributions
+- Interactive charts with Recharts
 
-## Installation
+### 🚀 Technical Features
+- Three production servers (ports 3007, 3009, 3010)
+- Connection pooling and query caching
+- Real-time monitoring dashboard
+- Docker deployment support
+- Comprehensive test coverage (70%+ target)
 
-1. Clone the repository:
+---
+
+## 🛠️ Tech Stack
+
+### Backend
+- **Runtime**: Node.js 20+
+- **Framework**: Express 5
+- **Language**: TypeScript & JavaScript (hybrid)
+- **Database**: SQLite (5.1GB database with 9.1M games)
+- **Caching**: In-memory query cache
+- **APIs**: Chess.com, Lichess
+
+### Frontend
+- **Framework**: Next.js 15 with React 19
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Data Fetching**: React Query (@tanstack/react-query)
+- **Chess**: chess.js, react-chessboard
+- **Charts**: Recharts
+
+### DevOps
+- **Deployment**: Railway (production), Docker support
+- **CI/CD**: GitHub Actions workflows
+- **Testing**: Jest with Supertest
+- **Monitoring**: Built-in performance monitoring
+
+---
+
+## 📋 Prerequisites
+
+- **Node.js** 20+ (LTS recommended)
+- **npm** 9+ or **yarn**
+- **Git** (for version control)
+- **4GB+ RAM** (for full database)
+
+Optional:
+- **Docker** & **Docker Compose** (for containerized deployment)
+
+---
+
+## 🚀 Quick Start
+
+### Option 1: Local Development (Recommended)
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/budapestdude/stats.git
+   cd chess-stats
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   cd frontend && npm install && cd ..
+   ```
+
+3. **Database setup**
+   ```bash
+   # Use the development subset database (included)
+   # Located at: otb-database/railway-subset.db
+
+   # OR download the full 9.1M game database (optional)
+   node download-full-db.js
+   ```
+
+4. **Start development servers**
+   ```bash
+   # Windows
+   ./start-dev.bat
+
+   # Linux/Mac or PowerShell
+   ./start-dev.ps1
+
+   # Manual start
+   npm run start:pooled    # Backend (port 3010)
+   cd frontend && npm run dev  # Frontend (port 3000)
+   ```
+
+5. **Open in browser**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:3010
+   - Health check: http://localhost:3010/health
+
+### Option 2: Docker Deployment
+
 ```bash
-git clone https://github.com/yourusername/chess-stats.git
-cd chess-stats
+# Production (recommended pooled server + frontend)
+docker-compose --profile production up -d
+
+# Development (all servers)
+docker-compose --profile dev up -d
 ```
 
-2. Install dependencies:
-```bash
-npm install
+---
+
+## 📡 API Endpoints
+
+### Server Ports
+- **3007**: Legacy server (`simple-server.js`)
+- **3009**: Optimized server with caching (`simple-server-optimized.js`)
+- **3010**: ⭐ **Production server** with connection pooling (`simple-server-pooled.js`)
+
+### Core Endpoints
+
+#### Health & Status
+```
+GET /health                          - Server health check
+GET /api/stats/overview              - Database statistics
+GET /api/pool/stats                  - Connection pool metrics (port 3010)
+GET /monitoring/dashboard            - Performance dashboard (port 3010)
 ```
 
-3. Set up PostgreSQL database:
-```bash
-createdb chess_stats
-psql chess_stats < database/schema.sql
+#### Players
+```
+GET /api/players/:username           - Chess.com player data
+GET /api/players/:username/stats     - OTB player statistics
+GET /api/players/search              - Search players
+GET /api/debug/search-player?q=name  - Debug player search
 ```
 
-4. Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your database credentials and API keys
+#### Games
+```
+GET /api/games/search                - Search games (filters: player, ECO, result, date)
+GET /api/games/:id                   - Get game details
+GET /api/games/:id/pgn               - Get game PGN moves
 ```
 
-5. Start Redis server:
-```bash
-redis-server
+#### Openings
+```
+GET /api/openings                    - Popular openings (top 50)
+GET /api/openings/explorer           - Lichess opening explorer
+GET /api/openings/eco/:eco           - Opening by ECO code
 ```
 
-6. Run the development server:
-```bash
-npm run dev
+#### Tournaments
+```
+GET /api/tournaments                 - Tournament list
+GET /api/tournaments/:id             - Tournament details
+GET /api/tournaments/:id/games       - Tournament games
 ```
 
-The API will be available at `http://localhost:3001`
+**Full API documentation**: See [CLAUDE.md](CLAUDE.md) for complete endpoint reference
 
-## API Endpoints
+---
 
-### Players
-- `GET /api/players` - Get all players with pagination
-- `GET /api/players/search` - Search players by name, country, or rating
-- `GET /api/players/top` - Get top rated players
-- `GET /api/players/:id` - Get player details
-- `GET /api/players/:id/games` - Get player's games
-- `GET /api/players/:id/statistics` - Get player statistics
-- `GET /api/players/:id/rating-history` - Get rating history
-- `GET /api/players/:id/openings` - Get player's opening repertoire
+## 🧪 Development
 
-### Games
-- `GET /api/games` - Get all games
-- `GET /api/games/search` - Search games
-- `GET /api/games/:id` - Get game details
-- `POST /api/games/import/pgn` - Import PGN file
+### npm Scripts
 
-### Openings
-- `GET /api/openings` - Get all openings
-- `GET /api/openings/explorer` - Opening explorer interface
-- `GET /api/openings/popular` - Get popular openings
-- `GET /api/openings/eco/:eco` - Get opening by ECO code
-- `GET /api/openings/:id/statistics` - Get opening statistics
+```bash
+# Backend
+npm run dev                 # TypeScript dev server (nodemon)
+npm run build:backend       # Build TypeScript
+npm run start:pooled        # Production pooled server ⭐
+npm run start:optimized     # Optimized server
+npm run start:legacy        # Legacy server
 
-### Tournaments
-- `GET /api/tournaments` - Get all tournaments
-- `GET /api/tournaments/upcoming` - Get upcoming tournaments
-- `GET /api/tournaments/:id` - Get tournament details
-- `GET /api/tournaments/:id/standings` - Get tournament standings
-- `GET /api/tournaments/:id/games` - Get tournament games
+# Frontend
+npm run build               # Build frontend only
+npm run build:full          # Build backend + frontend
+npm start                   # Start frontend production
 
-### Statistics
-- `GET /api/stats/overview` - Platform overview statistics
-- `GET /api/stats/rating-distribution` - Rating distribution analysis
-- `GET /api/stats/opening-trends` - Opening popularity trends
-- `GET /api/stats/country-rankings` - Country-based rankings
+# Testing
+npm test                    # Run all tests
+npm run test:watch          # Watch mode
+npm run test:coverage       # Coverage report
 
-## Development
-
-### Available Scripts
-
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build TypeScript files
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
+# Code Quality
+npm run lint                # ESLint
+npm run format              # Prettier formatting
+```
 
 ### Project Structure
 
 ```
 chess-stats/
-├── src/
-│   ├── api/           # External API integrations
-│   ├── config/        # Configuration files
-│   ├── controllers/   # Route controllers
-│   ├── middleware/    # Express middleware
-│   ├── models/        # Database models
-│   ├── routes/        # API routes
-│   ├── services/      # Business logic
-│   ├── utils/         # Utility functions
-│   ├── app.ts         # Express app setup
-│   └── server.ts      # Server entry point
-├── database/          # Database schemas and migrations
-├── frontend/          # Next.js frontend (to be implemented)
-├── tests/             # Test files
-└── docs/              # Documentation
-
+├── src/                           # Backend source (TypeScript/JavaScript)
+│   ├── controllers/               # API controllers
+│   ├── routes/                    # Express routes
+│   ├── services/                  # Business logic
+│   ├── middleware/                # Express middleware
+│   ├── utils/                     # Utilities
+│   └── config/                    # Configuration
+├── frontend/                      # Next.js 15 frontend
+│   └── app/                       # App Router pages
+│       ├── players/               # Player pages
+│       ├── openings/              # Opening explorer
+│       ├── games/                 # Game browser
+│       └── tournaments/           # Tournament calendar
+├── tests/                         # Jest tests
+│   ├── unit/                      # Unit tests
+│   └── integration/               # Integration tests
+├── scripts/                       # Utility scripts
+├── otb-database/                  # OTB tournament database
+│   ├── railway-subset.db          # Development database
+│   └── pgn-files/                 # Source PGN files
+├── simple-server-pooled.js        # ⭐ Production server
+├── simple-server-optimized.js     # Optimized server
+├── simple-server.js               # Legacy server
+├── docker-compose.yml             # Docker orchestration
+└── Dockerfile                     # Docker build config
 ```
 
-## Roadmap
+---
 
-See [ROADMAP.md](ROADMAP.md) for detailed development timeline and planned features.
+## 🧪 Testing
 
-## TODO
+### Running Tests
+```bash
+npm test                    # All tests
+npm run test:coverage       # With coverage report
+npm test -- <file>          # Specific test file
+```
 
-See [TODO.md](TODO.md) for the complete task list and current progress.
+### Test Coverage
+- **Target**: 70% minimum
+- **Framework**: Jest with Supertest
+- **Location**: `tests/` directory
+- Coverage report: `coverage/lcov-report/index.html`
 
-## Contributing
+---
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## 📚 Documentation
 
-## License
+- **[CLAUDE.md](CLAUDE.md)** - Complete development guide
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[TODO.md](TODO.md)** - Current tasks and roadmap
+- **[RAILWAY_DEPLOYMENT_STATUS.md](RAILWAY_DEPLOYMENT_STATUS.md)** - Production deployment status
+- **[DATABASE_CHUNKS_GUIDE.md](DATABASE_CHUNKS_GUIDE.md)** - Database management
+- **[DEPLOYMENT_GUIDES_INDEX.md](DEPLOYMENT_GUIDES_INDEX.md)** - All deployment guides
 
-MIT License - see LICENSE file for details
+---
+
+## 🐳 Docker Deployment
+
+### Using Docker Compose
+
+```bash
+# Production (pooled server + frontend)
+docker-compose --profile production up -d
+
+# Development (all 3 servers + frontend)
+docker-compose --profile dev up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+### Manual Docker Build
+
+```bash
+# Build image
+docker build -t chess-stats .
+
+# Run container
+docker run -p 3010:3010 \
+  -v $(pwd)/otb-database:/app/otb-database:ro \
+  chess-stats
+```
+
+---
+
+## 🌐 Production Deployment
+
+### Current Production Setup
+- **Frontend**: Railway - https://invigorating-solace-production.up.railway.app
+- **Backend**: Railway - https://stats-production-10e3.up.railway.app
+- **Database**: 9.1M games, 5.1GB SQLite database
+- **Status**: ✅ Fully operational
+
+### Deployment Options
+1. **Railway** - Current production (see [RAILWAY_DEPLOYMENT_STATUS.md](RAILWAY_DEPLOYMENT_STATUS.md))
+2. **Hetzner VPS** - Docker deployment (see [HETZNER_SETUP_GUIDE.md](HETZNER_SETUP_GUIDE.md))
+3. **Docker** - Any VPS with Docker support
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- Development setup
+- Coding standards
+- Testing guidelines
+- Pull request process
+- Project structure
+
+### Quick Contribution Steps
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests (`npm test`)
+5. Commit your changes
+6. Push to your fork
+7. Open a Pull Request
+
+---
+
+## 📊 Database
+
+### Statistics
+- **Total Games**: 9,160,700 (9.1M)
+- **Players**: 442,516
+- **Tournaments**: 18,254
+- **Date Range**: 1851-2025
+- **Database Size**: 5.1GB
+- **ECO Coverage**: 100%
+
+### Database Access
+- **Development**: Use `otb-database/railway-subset.db` (small subset)
+- **Production**: Download from [GitHub Release](https://github.com/budapestdude/stats/releases/tag/database-v2)
+- **Script**: `node download-full-db.js` (auto-downloads and assembles)
+
+---
+
+## 📈 Roadmap
+
+See [TODO.md](TODO.md) for detailed roadmap. Key upcoming features:
+- [ ] Player comparison tool
+- [ ] Advanced ML-based analytics
+- [ ] Progressive Web App (PWA)
+- [ ] User accounts and favorites
+- [ ] Chess engine integration
+- [ ] Mobile apps (React Native)
+
+---
+
+## 🔒 Security
+
+Please report security vulnerabilities to [SECURITY.md](SECURITY.md) (when created) or open a private security advisory on GitHub.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Chess game data from LumbrasGigaBase OTB database
+- Chess.com and Lichess for API access
+- Next.js, React, and Express communities
+- All contributors to this project
+
+---
+
+## 📞 Support
+
+- **Documentation**: Check [CLAUDE.md](CLAUDE.md) and other guides
+- **Issues**: [GitHub Issues](https://github.com/budapestdude/stats/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/budapestdude/stats/discussions)
+
+---
+
+**Made with ♟️ by the Chess Stats team**
+
+⭐ Star this repo if you find it useful!
