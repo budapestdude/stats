@@ -1,0 +1,64 @@
+# Prettier ignore file
+# Files and directories that should not be formatted by Prettier
+
+# Dependencies
+node_modules
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist
+build
+.next
+out
+coverage
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated files
+*.min.js
+*.min.css
+
+# Logs
+*.log
+logs
+
+# Cache
+.cache
+.temp
+tmp
+
+# IDE
+.vscode
+.idea
+.claude
+
+# Git
+.git
+.gitignore
+
+# Documentation that should preserve formatting
+CHANGELOG.md
+LICENSE
+
+# Test coverage reports
+coverage
+
+# Database migrations (may have specific formatting)
+migrations/*.sql
+
+# Swagger/OpenAPI generated files
+src/swagger/endpoints.yaml
+
+# Large data files
+*.csv
+*.json.large
+*.dat
+
+# Temporary files
+*.tmp
+*.bak
+*~

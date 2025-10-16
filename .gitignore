@@ -15,6 +15,7 @@ build/
 # IDE
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
@@ -42,6 +43,13 @@ coverage/
 *.db-wal
 *.db-journal
 !otb-database/railway-subset.db
+
+# Large database files and sources
+LumbrasGigaBase_OTB_2025/
+complete-tournaments.db.part*
+otb-database/pgn-files/
+otb-database/processed/
+otb-database/indexes/
 
 # Cache
 .cache/

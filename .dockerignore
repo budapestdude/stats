@@ -1,0 +1,161 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.claude/
+
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+yarn.lock
+
+# Testing
+coverage
+.nyc_output
+tests/
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Build outputs (will be built in container)
+dist
+build
+.next
+out
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Logs
+logs
+*.log
+error.log
+combined.log
+
+# Temporary files
+tmp
+.temp
+.cache
+nul
+
+# Database files (too large, downloaded at runtime)
+*.db
+*.sqlite
+*.sqlite3
+!otb-database/railway-subset.db
+complete-tournaments.db*
+chess-stats.db*
+chess-production.db*
+LumbrasGigaBase_OTB_2025/
+
+# Database temporary files
+*.db-shm
+*.db-wal
+*.db-journal
+
+# OTB database source files
+otb-database/pgn-files/
+otb-database/processed/
+otb-database/indexes/
+
+# Uploads and user data
+uploads/
+public/uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archives and backups
+*.tar.gz
+*.zip
+*.rar
+*.7z
+upload.tar.gz
+
+# Performance and test results
+performance-results-*.csv
+performance-results-*.json
+*.benchmark.json
+
+# Checkpoint files
+*-checkpoint.json
+import-checkpoint.json
+production-checkpoint.json
+
+# Development scripts (not needed in container)
+start-dev.bat
+start-dev.ps1
+start-both-servers.bat
+start-dev-improved.bat
+setup-postgresql.*
+download-postgresql.bat
+auto-setup-windows.ps1
+fix-ssh-key.ps1
+
+# Test and experimental scripts
+test-*.js
+check-*.js
+inspect-*.js
+quick-*.js
+monitor-*.js
+train-*.js
+
+# Database build scripts (not needed in production container)
+build-production-database.js
+create-subset-db.js
+split-database.js
+split-db-v3.js
+migrate-to-archive.js
+add-indexes.js
+create-database-indexes.js
+create-search-indexes.js
+
+# Import scripts
+import-*.js
+import-*.bat
+index-all-players.js
+create-player-pages.js
+update-player-pages.js
+
+# Multiple server variants (only include necessary ones)
+# Keep: simple-server.js, simple-server-optimized.js, simple-server-pooled.js
+optimized-server.js
+server-refactored.js
+server-with-docs.js
+server-secure.js
+simple-server-cached.js
+simple-server-postgresql.js
+simple-server-production.js
+fast-api-server.js
+tournament-archive-api.js
+production-archive-api.js
+production-server.js
+
+# PM2 ecosystem (if using different process manager)
+ecosystem.config.js
