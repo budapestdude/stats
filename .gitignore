@@ -38,6 +38,9 @@ coverage/
 *.sqlite
 *.sqlite3
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
 !otb-database/railway-subset.db
 
 # Cache

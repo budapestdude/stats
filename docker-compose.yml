@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  # Production-recommended pooled server (port 3010)
+  backend-pooled:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chess-stats-backend-pooled
+    restart: unless-stopped
+    ports:
+      - "3010:3010"
+    volumes:
+      - ./otb-database:/app/otb-database:ro
+      - ./logs:/app/logs
+      - database-tmp:/app/tmp
+    environment:
+      - NODE_ENV=production
+      - PORT=3010
+      - DATABASE_PATH=/app/otb-database/complete-tournaments.db
+    command: ["node", "simple-server-pooled.js"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3010/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - production
+      - dev
+
+  # Optimized server with caching (port 3009)
+  backend-optimized:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chess-stats-backend-optimized
+    restart: unless-stopped
+    ports:
+      - "3009:3009"
+    volumes:
+      - ./otb-database:/app/otb-database:ro
+      - ./logs:/app/logs
+      - database-tmp:/app/tmp
+    environment:
+      - NODE_ENV=production
+      - PORT=3009
+      - DATABASE_PATH=/app/otb-database/complete-tournaments.db
+    command: ["node", "simple-server-optimized.js"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3009/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - dev
+
+  # Legacy server (port 3007)
+  backend-legacy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chess-stats-backend-legacy
+    restart: unless-stopped
+    ports:
+      - "3007:3007"
+    volumes:
+      - ./otb-database:/app/otb-database:ro
+      - ./logs:/app/logs
+      - database-tmp:/app/tmp
+    environment:
+      - NODE_ENV=production
+      - PORT=3007
+      - DATABASE_PATH=/app/otb-database/complete-tournaments.db
+    command: ["node", "simple-server.js"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3007/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - dev
+
+  # Frontend Next.js application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: chess-stats-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://backend-pooled:3010
+    depends_on:
+      - backend-pooled
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    profiles:
+      - production
+      - dev
+
+volumes:
+  database-tmp:
+    driver: local
+
+networks:
+  default:
+    name: chess-stats-network
+    driver: bridge

@@ -1,0 +1,489 @@
+# Health Endpoints
+/health:
+  get:
+    tags:
+      - Health
+    summary: Check API health status
+    description: Returns the current health status of the API including database connectivity and cache status
+    responses:
+      '200':
+        description: API is healthy
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: healthy
+                timestamp:
+                  type: string
+                  format: date-time
+                message:
+                  type: string
+                  example: Chess Stats API is running!
+                database:
+                  type: string
+                  example: SQLite
+                cache:
+                  type: string
+                  example: enabled
+                rateLimit:
+                  type: string
+                  example: enabled
+
+# Player Endpoints
+/api/players/{username}:
+  get:
+    tags:
+      - Players
+    summary: Get player profile
+    description: Retrieve detailed profile information for a specific player
+    parameters:
+      - $ref: '#/components/parameters/username'
+    responses:
+      '200':
+        description: Player profile retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Player'
+      '404':
+        $ref: '#/components/responses/NotFound'
+      '429':
+        $ref: '#/components/responses/RateLimited'
+
+/api/players/{username}/stats:
+  get:
+    tags:
+      - Players
+    summary: Get player statistics
+    description: Retrieve detailed statistics including ratings and game records
+    parameters:
+      - $ref: '#/components/parameters/username'
+    responses:
+      '200':
+        description: Player statistics retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayerStats'
+      '404':
+        $ref: '#/components/responses/NotFound'
+
+/api/players/{username}/games:
+  get:
+    tags:
+      - Players
+    summary: Get player games
+    description: Retrieve recent games played by the player
+    parameters:
+      - $ref: '#/components/parameters/username'
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/offset'
+    responses:
+      '200':
+        description: Games retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                games:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Game'
+
+/api/players/top:
+  get:
+    tags:
+      - Players
+    summary: Get top players
+    description: Retrieve list of top-rated players
+    parameters:
+      - name: category
+        in: query
+        description: Rating category
+        schema:
+          type: string
+          enum: [blitz, rapid, bullet, classical]
+          default: blitz
+      - name: count
+        in: query
+        description: Number of players to return
+        schema:
+          type: integer
+          default: 10
+          minimum: 1
+          maximum: 100
+    responses:
+      '200':
+        description: Top players retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Player'
+
+/api/players/search:
+  get:
+    tags:
+      - Players
+    summary: Search players
+    description: Search for players by username or name
+    parameters:
+      - name: q
+        in: query
+        required: true
+        description: Search query
+        schema:
+          type: string
+          minLength: 2
+      - $ref: '#/components/parameters/limit'
+    responses:
+      '200':
+        description: Search results retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                results:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Player'
+                count:
+                  type: integer
+
+# Opening Endpoints
+/api/openings/explorer:
+  get:
+    tags:
+      - Openings
+    summary: Explore openings
+    description: Get opening statistics and popular continuations from a position
+    parameters:
+      - name: fen
+        in: query
+        description: FEN string of the position
+        schema:
+          type: string
+          default: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+      - name: play
+        in: query
+        description: Moves in UCI format (e.g., e2e4,e7e5)
+        schema:
+          type: string
+      - name: variant
+        in: query
+        description: Chess variant
+        schema:
+          type: string
+          enum: [standard, chess960, kingOfTheHill, threeCheck, antichess, atomic, horde, racingKings, crazyhouse]
+          default: standard
+    responses:
+      '200':
+        description: Opening data retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                opening:
+                  type: string
+                moves:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      uci:
+                        type: string
+                      san:
+                        type: string
+                      averageRating:
+                        type: integer
+                      white:
+                        type: integer
+                      draws:
+                        type: integer
+                      black:
+                        type: integer
+
+/api/openings/popular:
+  get:
+    tags:
+      - Openings
+    summary: Get popular openings
+    description: Retrieve list of most popular chess openings
+    parameters:
+      - $ref: '#/components/parameters/limit'
+    responses:
+      '200':
+        description: Popular openings retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Opening'
+
+# Tournament Endpoints
+/api/tournaments:
+  get:
+    tags:
+      - Tournaments
+    summary: List tournaments
+    description: Get list of chess tournaments
+    parameters:
+      - name: status
+        in: query
+        description: Tournament status filter
+        schema:
+          type: string
+          enum: [upcoming, in_progress, finished]
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/offset'
+    responses:
+      '200':
+        description: Tournaments retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tournament'
+
+/api/tournaments/{id}:
+  get:
+    tags:
+      - Tournaments
+    summary: Get tournament details
+    description: Retrieve detailed information about a specific tournament
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Tournament ID
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Tournament details retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tournament'
+      '404':
+        $ref: '#/components/responses/NotFound'
+
+# Statistics Endpoints
+/api/stats/overview:
+  get:
+    tags:
+      - Statistics
+    summary: Get platform statistics
+    description: Retrieve overall platform statistics including player counts and game totals
+    responses:
+      '200':
+        description: Statistics retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                totalPlayers:
+                  type: integer
+                  example: 2547893
+                totalGames:
+                  type: integer
+                  example: 100000000
+                totalTournaments:
+                  type: integer
+                  example: 5432
+                averageRating:
+                  type: integer
+                  example: 1485
+                activePlayers24h:
+                  type: integer
+                  example: 487291
+                gamesPlayed24h:
+                  type: integer
+                  example: 2847193
+
+/api/stats/rating-distribution:
+  get:
+    tags:
+      - Statistics
+    summary: Get rating distribution
+    description: Retrieve distribution of player ratings across different ranges
+    responses:
+      '200':
+        description: Rating distribution retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                distribution:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      range:
+                        type: string
+                        example: 1400-1600
+                      count:
+                        type: integer
+                        example: 535789
+                      percentage:
+                        type: number
+                        example: 21.0
+
+# Cache Management Endpoints
+/api/cache/stats:
+  get:
+    tags:
+      - Cache
+    summary: Get cache statistics
+    description: Retrieve detailed cache and rate limiting statistics
+    responses:
+      '200':
+        description: Cache statistics retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CacheStats'
+
+/api/cache/invalidate:
+  post:
+    tags:
+      - Cache
+    summary: Invalidate cache entries
+    description: Invalidate cache entries matching a pattern
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              pattern:
+                type: string
+                example: cache:*:/api/players/*
+    responses:
+      '200':
+        description: Cache invalidated successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deleted:
+                  type: integer
+                pattern:
+                  type: string
+
+/api/cache/warmup:
+  post:
+    tags:
+      - Cache
+    summary: Warmup cache
+    description: Pre-cache specified URLs
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              urls:
+                type: array
+                items:
+                  type: string
+                example: ["/api/stats/overview", "/api/players/top"]
+    responses:
+      '200':
+        description: Cache warmup started
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                urlCount:
+                  type: integer
+
+# OTB Database Endpoints
+/api/otb/database/search:
+  get:
+    tags:
+      - OTB Database
+    summary: Search OTB database
+    description: Search for games in the over-the-board tournament database
+    parameters:
+      - name: q
+        in: query
+        required: true
+        description: Search query (player name, tournament, etc.)
+        schema:
+          type: string
+      - $ref: '#/components/parameters/limit'
+    responses:
+      '200':
+        description: Search results retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                results:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Game'
+                count:
+                  type: integer
+
+/api/otb/database/tournaments:
+  get:
+    tags:
+      - OTB Database
+    summary: List OTB tournaments
+    description: Get list of over-the-board tournaments in the database
+    parameters:
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/offset'
+    responses:
+      '200':
+        description: Tournaments retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tournament'
+
+/api/otb/database/players/{name}/games:
+  get:
+    tags:
+      - OTB Database
+    summary: Get player OTB games
+    description: Retrieve over-the-board games for a specific player
+    parameters:
+      - name: name
+        in: path
+        required: true
+        description: Player name
+        schema:
+          type: string
+      - $ref: '#/components/parameters/limit'
+    responses:
+      '200':
+        description: Games retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Game'
