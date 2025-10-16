@@ -21,9 +21,24 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "chess",
+    "statistics",
+    "analytics",
+    "openings",
+    "tournaments",
+    "chess.com",
+    "lichess",
+    "pgn",
+    "otb",
+    "fide"
+  ],
+  "author": "Chess Stats Contributors",
+  "license": "MIT",
   "dependencies": {
     "@sentry/node": "^8.36.0",
     "@sentry/profiling-node": "^8.36.0",

@@ -42,7 +42,6 @@ coverage/
 *.db-shm
 *.db-wal
 *.db-journal
-!otb-database/railway-subset.db
 
 # Large database files and sources
 LumbrasGigaBase_OTB_2025/
