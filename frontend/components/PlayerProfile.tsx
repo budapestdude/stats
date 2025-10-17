@@ -19,11 +19,23 @@ export default function PlayerProfile({ playerName, playerSlug, playerTitle }: P
 
   useEffect(() => {
     fetchPlayerData();
-  }, [playerSlug]);
+  }, [playerName]);
+
+  // Convert "Garry Kasparov" to "Kasparov, Garry" for database API
+  const convertToDatabaseFormat = (name: string): string => {
+    const parts = name.trim().split(' ');
+    if (parts.length < 2) return name;
+
+    // Last name is the last part, first names are everything else
+    const lastName = parts[parts.length - 1];
+    const firstNames = parts.slice(0, -1).join(' ');
+    return `${lastName}, ${firstNames}`;
+  };
 
   const fetchPlayerData = async () => {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/api/players/${playerSlug}/stats`);
+      const databaseName = convertToDatabaseFormat(playerName);
+      const response = await fetch(`${getApiBaseUrl()}/api/players/${encodeURIComponent(databaseName)}/stats`);
       if (response.ok) {
         const result = await response.json();
         setData(result);
