@@ -474,21 +474,42 @@ app.get('/api/players/:name/stats', requirePool, async (req, res) => {
   }
 });
 
-// Opening statistics
-app.get('/api/openings/stats', async (req, res) => {
+// Opening list endpoint (alias for /stats for frontend compatibility)
+app.get('/api/openings', async (req, res) => {
   try {
     const { eco, limit = 20, minGames = 10 } = req.query;
-    
+
     const { sql, params } = QueryHelpers.openingStats(eco, {
       limit: parseInt(limit),
       minGames: parseInt(minGames)
     });
-    
+
     const cacheKey = `opening-stats:${JSON.stringify(req.query)}`;
     const openings = await cachedPoolQuery(cacheKey, { sql, params });
-    
+
     res.json({ openings });
-    
+
+  } catch (error) {
+    logger.error('Error getting opening list:', error);
+    res.status(500).json({ error: 'Failed to get opening list' });
+  }
+});
+
+// Opening statistics
+app.get('/api/openings/stats', async (req, res) => {
+  try {
+    const { eco, limit = 20, minGames = 10 } = req.query;
+
+    const { sql, params } = QueryHelpers.openingStats(eco, {
+      limit: parseInt(limit),
+      minGames: parseInt(minGames)
+    });
+
+    const cacheKey = `opening-stats:${JSON.stringify(req.query)}`;
+    const openings = await cachedPoolQuery(cacheKey, { sql, params });
+
+    res.json({ openings });
+
   } catch (error) {
     logger.error('Error getting opening stats:', error);
     res.status(500).json({ error: 'Failed to get opening statistics' });
