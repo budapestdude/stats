@@ -38,7 +38,47 @@ export default function PlayerProfile({ playerName, playerSlug, playerTitle }: P
       const response = await fetch(`${getApiBaseUrl()}/api/players/${encodeURIComponent(databaseName)}/stats`);
       if (response.ok) {
         const result = await response.json();
-        setData(result);
+
+        // Transform flat backend response to nested structure expected by component
+        const transformedData = {
+          overview: {
+            totalGames: result.total_games || 0,
+            wins: result.wins || 0,
+            draws: result.draws || 0,
+            losses: result.losses || 0,
+            winRate: result.winRate || '0',
+            drawRate: result.drawRate || '0',
+            lossRate: result.lossRate || '0',
+            performanceScore: '0',
+            decisiveGameRate: '0'
+          },
+          byColor: {
+            white: { games: 0, wins: 0, draws: 0, losses: 0, winRate: '0', performanceScore: '0' },
+            black: { games: 0, wins: 0, draws: 0, losses: 0, winRate: '0', performanceScore: '0' }
+          },
+          yearlyStats: {},
+          opponentRatings: [],
+          openingStats: { asWhite: [], asBlack: [] },
+          topOpponents: [],
+          topEvents: [],
+          perfectEvents: [],
+          streaks: { longestWinStreak: 0, longestUnbeatenStreak: 0 },
+          peakRating: 'N/A',
+          vsElite: {
+            vsTop10: { games: 0, wins: 0, draws: 0, losses: 0 },
+            vsTop50: { games: 0, wins: 0, draws: 0, losses: 0 }
+          },
+          notableVictories: [],
+          firstGame: { date: result.first_game, opponent: '', event: '' },
+          lastGame: { date: result.last_game, opponent: '', event: '' },
+          career: {
+            firstGame: result.first_game,
+            lastGame: result.last_game,
+            yearsActive: 0
+          }
+        };
+
+        setData(transformedData);
       }
     } catch (error) {
       console.error('Failed to fetch player data:', error);
