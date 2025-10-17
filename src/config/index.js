@@ -166,11 +166,14 @@ const validateConfig = () => {
 
   // Check for production requirements
   if (config.app.isProduction) {
-    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.includes('change-this')) {
-      required.push('JWT_SECRET must be set to a secure value in production');
-    }
-    if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.includes('change-this')) {
-      required.push('SESSION_SECRET must be set to a secure value in production');
+    // JWT and Session secrets are only required if features are enabled
+    if (config.features.premiumAccounts || config.features.socialLogin) {
+      if (!process.env.JWT_SECRET || process.env.JWT_SECRET.includes('change-this')) {
+        required.push('JWT_SECRET must be set when authentication features are enabled');
+      }
+      if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.includes('change-this')) {
+        required.push('SESSION_SECRET must be set when authentication features are enabled');
+      }
     }
     if (config.database.type === 'postgres' && !process.env.DATABASE_URL) {
       required.push('DATABASE_URL must be set for PostgreSQL in production');
