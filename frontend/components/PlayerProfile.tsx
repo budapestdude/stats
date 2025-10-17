@@ -451,8 +451,12 @@ export default function PlayerProfile({ playerName, playerSlug, playerTitle }: P
                   {data.notableVictories.slice(0, 20).map((victory: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded">
                       <div>
-                        <p className="font-medium">{victory.opponent} ({victory.rating})</p>
-                        <p className="text-sm text-gray-600">{victory.event} • {victory.date}</p>
+                        <p className="font-medium">
+                          {victory.opponent} ({typeof victory.rating === 'object' ? JSON.stringify(victory.rating) : victory.rating})
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {victory.event} • {typeof victory.date === 'object' ? JSON.stringify(victory.date) : victory.date}
+                        </p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-bold text-green-600">Victory</p>
@@ -489,7 +493,7 @@ export default function PlayerProfile({ playerName, playerSlug, playerTitle }: P
                     <div>
                       <p className="font-medium">First Game</p>
                       <p className="text-sm text-gray-600">
-                        {data.firstGame.date} • vs {data.firstGame.opponent} • {data.firstGame.event}
+                        {typeof data.firstGame.date === 'object' ? JSON.stringify(data.firstGame.date) : data.firstGame.date} • vs {data.firstGame.opponent} • {data.firstGame.event}
                       </p>
                     </div>
                   </div>
@@ -500,7 +504,7 @@ export default function PlayerProfile({ playerName, playerSlug, playerTitle }: P
                     <div>
                       <p className="font-medium">Latest Game</p>
                       <p className="text-sm text-gray-600">
-                        {data.lastGame.date} • vs {data.lastGame.opponent} • {data.lastGame.event}
+                        {typeof data.lastGame.date === 'object' ? JSON.stringify(data.lastGame.date) : data.lastGame.date} • vs {data.lastGame.opponent} • {data.lastGame.event}
                       </p>
                     </div>
                   </div>
