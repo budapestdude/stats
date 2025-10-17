@@ -11,11 +11,31 @@ const app = express();
 const PORT = 3010;
 
 // CORS configuration
+const allowedOrigins = [
+  /^http:\/\/localhost:\d+$/,  // localhost with any port
+  /^https:\/\/.*\.up\.railway\.app$/,  // Railway deployments
+  'https://invigorating-solace-production.up.railway.app'  // Specific frontend
+];
+
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin || origin.startsWith('http://localhost:')) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Check if origin matches any allowed pattern
+    const isAllowed = allowedOrigins.some(pattern => {
+      if (typeof pattern === 'string') {
+        return origin === pattern;
+      }
+      return pattern.test(origin);
+    });
+
+    if (isAllowed) {
       callback(null, true);
     } else {
+      logger.warn(`CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
