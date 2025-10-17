@@ -45,8 +45,7 @@ COPY --from=builder --chown=chessapp:nodejs /app/dist ./dist
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/logs /app/tmp /app/otb-database /app/data && \
     chown -R chessapp:nodejs /app/logs /app/tmp /app/otb-database /app/data && \
-    chmod -R 755 /app/data && \
-    chmod +x start-railway.sh
+    chmod -R 755 /app/data
 
 # Switch to non-root user
 USER chessapp
@@ -61,5 +60,5 @@ EXPOSE 3007 3009 3010
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "const port = process.env.PORT || 3010; require('http').get('http://localhost:' + port + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Use sh explicitly to run the startup script (Alpine Linux uses sh, not bash)
-CMD ["/bin/sh", "./start-railway.sh"]
+# Use Node.js startup script instead of shell script for better compatibility
+CMD ["node", "start.js"]
