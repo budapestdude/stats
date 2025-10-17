@@ -42,9 +42,10 @@ COPY --chown=chessapp:nodejs . .
 # Copy built TypeScript (directory always exists from builder)
 COPY --from=builder --chown=chessapp:nodejs /app/dist ./dist
 
-# Create necessary directories
-RUN mkdir -p /app/logs /app/tmp /app/otb-database && \
-    chown -R chessapp:nodejs /app/logs /app/tmp /app/otb-database
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs /app/tmp /app/otb-database /app/data && \
+    chown -R chessapp:nodejs /app/logs /app/tmp /app/otb-database /app/data && \
+    chmod -R 755 /app/data
 
 # Switch to non-root user
 USER chessapp

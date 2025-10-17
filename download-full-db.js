@@ -16,7 +16,19 @@ console.log('🔍 Checking for database...\n');
 // Check if force redownload is enabled
 if (process.env.FORCE_REDOWNLOAD === 'true' && fs.existsSync(DB_PATH)) {
   console.log('⚠️  FORCE_REDOWNLOAD enabled - deleting existing database');
-  fs.unlinkSync(DB_PATH);
+  try {
+    // Try to change permissions first if we can't delete
+    try {
+      fs.chmodSync(DB_PATH, 0o666);
+    } catch (chmodErr) {
+      // Ignore chmod errors, try deletion anyway
+    }
+    fs.unlinkSync(DB_PATH);
+    console.log('   ✅ Existing database deleted');
+  } catch (err) {
+    console.warn(`   ⚠️  Could not delete existing database: ${err.message}`);
+    console.warn('   Continuing anyway - may cause issues if file is corrupted');
+  }
 }
 
 // Check if database already exists in volume
@@ -118,7 +130,11 @@ async function downloadChunk(chunkNum, outputPath) {
     });
 
     writeStream.on('error', (err) => {
-      fs.unlinkSync(outputPath);
+      try {
+        fs.unlinkSync(outputPath);
+      } catch (unlinkErr) {
+        // Ignore unlink errors during cleanup
+      }
       reject(err);
     });
   });
@@ -142,7 +158,11 @@ async function assembleDatabase() {
     });
 
     // Delete chunk after merging
-    fs.unlinkSync(chunkPath);
+    try {
+      fs.unlinkSync(chunkPath);
+    } catch (err) {
+      console.warn(`   Warning: Could not delete chunk ${i}: ${err.message}`);
+    }
   }
 
   // Clean up temp directory
@@ -192,10 +212,18 @@ async function main() {
 
     // Clean up on failure
     if (fs.existsSync(DB_PATH)) {
-      fs.unlinkSync(DB_PATH);
+      try {
+        fs.unlinkSync(DB_PATH);
+      } catch (unlinkErr) {
+        console.warn('   Warning: Could not delete partial database file');
+      }
     }
     if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      } catch (rmErr) {
+        console.warn('   Warning: Could not delete temp directory');
+      }
     }
 
     process.exit(0); // Don't fail deployment
