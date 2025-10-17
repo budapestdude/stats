@@ -55,8 +55,15 @@ let pool = null;
  */
 async function initializePool() {
   try {
+    // Use Railway volume path if available, otherwise use local path
+    const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
+      ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'complete-tournaments.db')
+      : path.join(__dirname, 'otb-database', 'complete-tournaments.db');
+
+    console.log(`Using database at: ${dbPath}`);
+
     pool = getPool({
-      database: path.join(__dirname, 'otb-database', 'complete-tournaments.db'),
+      database: dbPath,
       minConnections: 3,
       maxConnections: 15,
       acquireTimeout: 30000,
