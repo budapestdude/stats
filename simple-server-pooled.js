@@ -8,7 +8,7 @@ const analyticsRoutes = require('./src/routes/analytics');
 const searchRoutes = require('./src/routes/search');
 
 const app = express();
-const PORT = 3010;
+const PORT = process.env.PORT || 3010;
 
 // CORS configuration
 const allowedOrigins = [
