@@ -1,7 +1,7 @@
 {
   "name": "frontend",
-  "version": "1.0.1",
-  "description": "Chess Stats Frontend with player name format fix",
+  "version": "1.0.2",
+  "description": "Chess Stats Frontend with data structure transformation",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
