@@ -55,12 +55,26 @@ let pool = null;
  */
 async function initializePool() {
   try {
+    // Log environment info
+    console.log('\n🔍 Database Configuration:');
+    console.log(`   RAILWAY_VOLUME_MOUNT_PATH: ${process.env.RAILWAY_VOLUME_MOUNT_PATH || 'NOT SET'}`);
+    console.log(`   __dirname: ${__dirname}`);
+
     // Use Railway volume path if available, otherwise use local path
     const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
       ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'complete-tournaments.db')
       : path.join(__dirname, 'otb-database', 'complete-tournaments.db');
 
-    console.log(`Using database at: ${dbPath}`);
+    console.log(`   Database path: ${dbPath}`);
+
+    // Check if file exists
+    const fs = require('fs');
+    if (fs.existsSync(dbPath)) {
+      const stats = fs.statSync(dbPath);
+      console.log(`   ✅ Database file found (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
+    } else {
+      console.log(`   ❌ Database file NOT found at this path`);
+    }
 
     pool = getPool({
       database: dbPath,
