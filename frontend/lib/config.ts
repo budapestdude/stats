@@ -1,7 +1,8 @@
 // Central API configuration for Chess Stats
 
 // The environment variable embedded at build time by Next.js
-const BUILD_TIME_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244';
+// Default to Railway backend which has the working database
+const BUILD_TIME_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://stats-production-10e3.up.railway.app';
 
 /**
  * Get the API base URL - ALWAYS use this function, never a constant!
