@@ -4,7 +4,7 @@
 const getApiBaseUrl = () => {
   // Server-side rendering
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244';
+    return process.env.NEXT_PUBLIC_API_URL || 'https://stats-production-10e3.up.railway.app';
   }
 
   // Client-side: check if on localhost
@@ -13,8 +13,8 @@ const getApiBaseUrl = () => {
     return 'http://localhost:3010';
   }
 
-  // Production: use environment variable or default to Hetzner
-  return process.env.NEXT_PUBLIC_API_URL || 'http://195.201.6.244';
+  // Production: use environment variable or default to Railway backend
+  return process.env.NEXT_PUBLIC_API_URL || 'https://stats-production-10e3.up.railway.app';
 };
 
 const API_BASE_URL = getApiBaseUrl();
