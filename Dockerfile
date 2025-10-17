@@ -56,9 +56,10 @@ USER chessapp
 # 3010: Production pooled server (recommended)
 EXPOSE 3007 3009 3010
 
-# Health check
+# Health check (will check PORT environment variable, defaults to 3010)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3010/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "const port = process.env.PORT || 3010; require('http').get('http://localhost:' + port + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Default to production pooled server (recommended)
-CMD ["node", "simple-server-pooled.js"]
+# Make startup script executable and use it as entrypoint
+RUN chmod +x start-railway.sh
+CMD ["./start-railway.sh"]
