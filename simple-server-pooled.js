@@ -65,26 +65,41 @@ let pool = null;
  */
 async function initializePool() {
   try {
+    const fs = require('fs');
+
     // Log environment info
     console.log('\n🔍 Database Configuration:');
     console.log(`   RAILWAY_VOLUME_MOUNT_PATH: ${process.env.RAILWAY_VOLUME_MOUNT_PATH || 'NOT SET'}`);
     console.log(`   __dirname: ${__dirname}`);
 
-    // Use Railway volume path if available, otherwise use local path
-    const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
+    // Check Railway volume first, then fallback to local path
+    let dbPath = null;
+    const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH
       ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'complete-tournaments.db')
-      : path.join(__dirname, 'otb-database', 'complete-tournaments.db');
+      : null;
+    const fallbackPath = path.join(__dirname, 'otb-database', 'complete-tournaments.db');
 
-    console.log(`   Database path: ${dbPath}`);
-
-    // Check if file exists
-    const fs = require('fs');
-    if (fs.existsSync(dbPath)) {
+    // Try Railway volume first
+    if (volumePath && fs.existsSync(volumePath)) {
+      dbPath = volumePath;
       const stats = fs.statSync(dbPath);
-      console.log(`   ✅ Database file found (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
-    } else {
-      console.log(`   ❌ Database file NOT found at this path`);
+      console.log(`   ✅ Database found in Railway volume (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
     }
+    // Try fallback location
+    else if (fs.existsSync(fallbackPath)) {
+      dbPath = fallbackPath;
+      const stats = fs.statSync(dbPath);
+      console.log(`   ✅ Database found in fallback location (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
+    }
+    else {
+      console.log(`   ❌ Database file NOT found`);
+      console.log(`   Checked paths:`);
+      if (volumePath) console.log(`     - ${volumePath}`);
+      console.log(`     - ${fallbackPath}`);
+      throw new Error('Database file not found');
+    }
+
+    console.log(`   Using: ${dbPath}`);
 
     pool = getPool({
       database: dbPath,

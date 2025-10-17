@@ -8,8 +8,35 @@ const { URL } = require('url');
 // Configuration
 const BASE_URL = process.env.DATABASE_DOWNLOAD_URL || 'https://github.com/budapestdude/stats/releases/download/database-v2/complete-tournaments.db';
 const VOLUME_PATH = process.env.RAILWAY_VOLUME_MOUNT_PATH || '/app/data';
-const DB_PATH = path.join(VOLUME_PATH, 'complete-tournaments.db');
+const FALLBACK_PATH = path.join(__dirname, 'otb-database');
 const CHUNK_COUNT = parseInt(process.env.DATABASE_CHUNK_COUNT || '3', 10); // Number of chunks
+
+// Try to determine writable database path
+function getWritableDatabasePath() {
+  // Try Railway volume first
+  const volumePath = path.join(VOLUME_PATH, 'complete-tournaments.db');
+  try {
+    // Test if we can write to the volume
+    const testFile = path.join(VOLUME_PATH, '.write-test');
+    fs.writeFileSync(testFile, 'test');
+    fs.unlinkSync(testFile);
+    console.log('✅ Railway volume is writable, using:', volumePath);
+    return volumePath;
+  } catch (err) {
+    // Volume not writable, use fallback
+    console.warn('⚠️  Railway volume not writable:', err.message);
+    console.log('   Using fallback path:', path.join(FALLBACK_PATH, 'complete-tournaments.db'));
+
+    // Ensure fallback directory exists
+    if (!fs.existsSync(FALLBACK_PATH)) {
+      fs.mkdirSync(FALLBACK_PATH, { recursive: true });
+    }
+
+    return path.join(FALLBACK_PATH, 'complete-tournaments.db');
+  }
+}
+
+const DB_PATH = getWritableDatabasePath();
 
 console.log('🔍 Checking for database...\n');
 
