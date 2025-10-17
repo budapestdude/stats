@@ -30,6 +30,28 @@ downloadProcess.on('close', (code) => {
     console.warn('⚠️  Download script failed, but continuing...');
   }
 
+  // Step 1.5: Check database permissions
+  const fs = require('fs');
+  const path = require('path');
+  const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
+    ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'complete-tournaments.db')
+    : path.join(__dirname, 'otb-database', 'complete-tournaments.db');
+
+  if (fs.existsSync(dbPath)) {
+    console.log('Step 1.5: Verifying database accessibility...');
+    try {
+      // Try to open the file for reading
+      const fd = fs.openSync(dbPath, 'r');
+      fs.closeSync(fd);
+      console.log('   ✅ Database file is accessible');
+    } catch (err) {
+      console.error('   ❌ Database file exists but is not accessible:', err.message);
+      console.error('   This is likely a permissions issue with the Railway volume');
+      console.error('   The server will start but database queries will fail');
+    }
+    console.log('');
+  }
+
   // Step 2: Start the server
   console.log('Step 2: Starting server...');
   console.log('Executing: node simple-server-pooled.js');

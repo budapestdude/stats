@@ -36,6 +36,18 @@ if (fs.existsSync(DB_PATH)) {
   const stats = fs.statSync(DB_PATH);
   const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
   console.log(`✅ Database already exists (${sizeMB} MB)`);
+
+  // Ensure correct permissions for the database file
+  console.log('   Checking file permissions...');
+  try {
+    // Set read/write for owner and group, read for others (0o664)
+    fs.chmodSync(DB_PATH, 0o664);
+    console.log('   ✅ Permissions set to 664 (rw-rw-r--)');
+  } catch (err) {
+    console.warn(`   ⚠️  Could not set permissions: ${err.message}`);
+    console.warn('   The database might not be readable by the application');
+  }
+
   console.log('   Skipping download.\n');
   process.exit(0);
 }
