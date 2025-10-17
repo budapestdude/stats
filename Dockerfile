@@ -19,8 +19,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build TypeScript
-RUN npm run build:backend || echo "No TypeScript build configured"
+# Build TypeScript and ensure dist directory exists
+RUN (npm run build:backend || echo "No TypeScript build configured") && \
+    mkdir -p /app/dist
 
 # Production image
 FROM base AS runner
@@ -38,8 +39,8 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy application code
 COPY --chown=chessapp:nodejs . .
 
-# Copy built TypeScript (if exists)
-COPY --from=builder --chown=chessapp:nodejs /app/dist ./dist 2>/dev/null || true
+# Copy built TypeScript (directory always exists from builder)
+COPY --from=builder --chown=chessapp:nodejs /app/dist ./dist
 
 # Create necessary directories
 RUN mkdir -p /app/logs /app/tmp /app/otb-database && \
