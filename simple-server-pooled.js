@@ -1,14 +1,24 @@
+console.log('\n🚀 Starting simple-server-pooled.js...');
+console.log('⏰ Timestamp:', new Date().toISOString());
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+
+console.log('✅ Basic modules loaded');
+
 const { getPool } = require('./src/services/connection-pool');
 const { QueryBuilder, QueryHelpers } = require('./src/utils/query-builder');
 const logger = require('./src/utils/logger');
 const analyticsRoutes = require('./src/routes/analytics');
 const searchRoutes = require('./src/routes/search');
 
+console.log('✅ All application modules loaded');
+
 const app = express();
 const PORT = process.env.PORT || 3010;
+
+console.log(`✅ Express app created, will listen on port ${PORT}`);
 
 // CORS configuration
 const allowedOrigins = [
