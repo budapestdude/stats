@@ -138,35 +138,43 @@ async function cachedPoolQuery(cacheKey, queryBuilder, ttl = CACHE_TIMEOUT) {
   return result;
 }
 
-// Initialize pool on startup
-initializePool().catch(error => {
-  console.error('Failed to initialize pool:', error);
-  process.exit(1);
-});
-
 // Health endpoint with pool stats
 app.get('/health', async (req, res) => {
   const poolStats = pool ? pool.getStats() : null;
-  
-  res.json({ 
-    status: 'healthy', 
+
+  res.json({
+    status: pool ? 'healthy' : 'starting',
     timestamp: new Date().toISOString(),
-    message: 'Pooled Chess Stats API is running!',
+    message: pool ? 'Pooled Chess Stats API is running!' : 'Server starting, database initializing...',
     cache: {
       size: queryCache.size,
       maxAge: CACHE_TIMEOUT
     },
-    pool: poolStats
+    pool: poolStats,
+    databaseReady: !!pool
   });
 });
 
 // Test endpoint
 app.get('/api/test', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Pooled API is working!',
-    features: ['connection-pooling', 'query-builder', 'caching', 'optimized-indexes', 'advanced-analytics']
+    features: ['connection-pooling', 'query-builder', 'caching', 'optimized-indexes', 'advanced-analytics'],
+    databaseReady: !!pool
   });
 });
+
+// Middleware to check if pool is ready
+function requirePool(req, res, next) {
+  if (!pool) {
+    return res.status(503).json({
+      error: 'Database not ready',
+      message: 'Database pool is still initializing. Please try again in a few moments.',
+      databaseReady: false
+    });
+  }
+  next();
+}
 
 // Mount analytics routes
 app.use('/api/analytics', analyticsRoutes);
@@ -389,13 +397,13 @@ app.get('/api/games/search', async (req, res) => {
 });
 
 // Player statistics with pooling
-app.get('/api/players/:name/stats', async (req, res) => {
+app.get('/api/players/:name/stats', requirePool, async (req, res) => {
   try {
     const playerName = req.params.name;
     const { sql, params } = QueryHelpers.playerStats(playerName);
-    
+
     const cacheKey = `player-stats:${playerName}`;
-    
+
     // Check cache first
     if (queryCache.has(cacheKey)) {
       const cached = queryCache.get(cacheKey);
@@ -403,24 +411,24 @@ app.get('/api/players/:name/stats', async (req, res) => {
         return res.json(cached.data);
       }
     }
-    
+
     // Use pool for query
     const stats = await pool.get(sql, params);
-    
+
     if (stats) {
       stats.winRate = ((stats.wins / stats.total_games) * 100).toFixed(2);
       stats.drawRate = ((stats.draws / stats.total_games) * 100).toFixed(2);
       stats.lossRate = ((stats.losses / stats.total_games) * 100).toFixed(2);
     }
-    
+
     // Cache result
     queryCache.set(cacheKey, {
       data: stats,
       timestamp: Date.now()
     });
-    
+
     res.json(stats);
-    
+
   } catch (error) {
     logger.error('Error getting player stats:', error);
     res.status(500).json({ error: 'Failed to get player statistics' });
@@ -469,22 +477,22 @@ app.get('/api/tournaments/:name/standings', async (req, res) => {
 });
 
 // Top players with connection pooling
-app.get('/api/players/top', async (req, res) => {
+app.get('/api/players/top', requirePool, async (req, res) => {
   try {
     const { limit = 50 } = req.query;
-    
+
     const query = new QueryBuilder('games')
       .select('white_player as player', 'COUNT(*) as games')
       .groupBy('white_player')
       .having('COUNT(*)', '>=', 100)
       .orderBy('games', 'DESC')
       .limit(parseInt(limit));
-    
+
     const cacheKey = `top-players:${limit}`;
     const players = await cachedPoolQuery(cacheKey, query);
-    
+
     res.json({ players });
-    
+
   } catch (error) {
     logger.error('Error getting top players:', error);
     res.status(500).json({ error: 'Failed to get top players' });
@@ -926,7 +934,7 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// Start server
+// Start server FIRST, then initialize database
 app.listen(PORT, () => {
   console.log(`\n🚀 Pooled Chess Stats API running on http://localhost:${PORT}`);
   console.log('📊 Features enabled:');
@@ -947,4 +955,16 @@ app.listen(PORT, () => {
   console.log(`  GET http://localhost:${PORT}/api/stats/database`);
   console.log(`  GET http://localhost:${PORT}/api/stress-test`);
   console.log(`  POST http://localhost:${PORT}/api/cache/clear`);
+  console.log('\n⏳ Initializing database connection pool...');
+
+  // Initialize pool after server starts
+  initializePool()
+    .then(() => {
+      console.log('✅ Database pool ready for requests\n');
+    })
+    .catch((error) => {
+      console.error('❌ Failed to initialize database pool:', error.message);
+      console.error('⚠️  Server will continue running but database endpoints will not work');
+      console.error('   Check RAILWAY_VOLUME_MOUNT_PATH and database file location\n');
+    });
 });
