@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
+import { getApiBaseUrl } from '@/lib/config';
 
 interface TournamentAnalyticsProps {
   tournamentName: string;
@@ -16,7 +17,7 @@ export default function TournamentAnalytics({ tournamentName }: TournamentAnalyt
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:3010/api/analytics/tournament/${encodeURIComponent(tournamentName)}`
+          `${getApiBaseUrl()}/api/analytics/tournament/${encodeURIComponent(tournamentName)}`
         );
         const data = await response.json();
         

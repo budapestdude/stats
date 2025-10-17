@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { getApiBaseUrl } from '@/lib/config';
 
 ChartJS.register(
   RadialLinearScale,
@@ -35,7 +36,7 @@ export default function PlayerComparison({ player1, player2 }: PlayerComparisonP
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:3010/api/analytics/compare?player1=${encodeURIComponent(player1)}&player2=${encodeURIComponent(player2)}`
+          `${getApiBaseUrl()}/api/analytics/compare?player1=${encodeURIComponent(player1)}&player2=${encodeURIComponent(player2)}`
         );
         const data = await response.json();
         

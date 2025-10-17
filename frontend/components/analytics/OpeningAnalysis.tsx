@@ -15,6 +15,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { getApiBaseUrl } from '@/lib/config';
 
 ChartJS.register(
   RadialLinearScale,
@@ -42,7 +43,7 @@ export default function OpeningAnalysis({ playerName }: OpeningAnalysisProps) {
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:3010/api/analytics/player/${encodeURIComponent(playerName)}/openings`
+          `${getApiBaseUrl()}/api/analytics/player/${encodeURIComponent(playerName)}/openings`
         );
         const data = await response.json();
         

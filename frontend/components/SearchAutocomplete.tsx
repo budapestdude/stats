@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Search, User, Trophy, Clock, TrendingUp, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { getApiBaseUrl } from '@/lib/config';
 
 interface SearchResult {
   type: 'player' | 'tournament' | 'opening';
@@ -117,7 +118,7 @@ export default function SearchAutocomplete({
       if (searchTypes.includes('player')) {
         try {
           // For now, we'll use Chess.com search (could be enhanced with our database)
-          const response = await axios.get(`http://localhost:3007/api/players/${searchQuery}`);
+          const response = await axios.get(`${getApiBaseUrl()}/api/players/${searchQuery}`);
           if (response.data) {
             searchResults.push({
               type: 'player',
@@ -136,10 +137,10 @@ export default function SearchAutocomplete({
       // Search tournaments (from our database)
       if (searchTypes.includes('tournament')) {
         try {
-          const response = await axios.get(`http://localhost:3007/api/otb/database/tournaments`);
+          const response = await axios.get(`${getApiBaseUrl()}/api/otb/database/tournaments`);
           const tournaments = response.data || [];
           const filtered = tournaments
-            .filter((t: any) => 
+            .filter((t: any) =>
               t.name?.toLowerCase().includes(searchQuery.toLowerCase())
             )
             .slice(0, 3)

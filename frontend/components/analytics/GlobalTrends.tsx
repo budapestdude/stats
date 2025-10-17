@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
+import { getApiBaseUrl } from '@/lib/config';
 
 export default function GlobalTrends() {
   const [trends, setTrends] = useState<any>(null);
@@ -11,7 +12,7 @@ export default function GlobalTrends() {
     const fetchTrends = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:3010/api/analytics/trends');
+        const response = await fetch(`${getApiBaseUrl()}/api/analytics/trends`);
         const data = await response.json();
         
         if (data.success) {

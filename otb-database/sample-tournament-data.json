@@ -1,0 +1,123 @@
+{
+  "name": "Kwalificatie NK ABC Groningen 2024",
+  "games_count": 62,
+  "players": [
+    {
+      "name": "Zecha, Oscar",
+      "games": 3,
+      "wins": 3,
+      "draws": 0,
+      "losses": 0,
+      "score": 3
+    },
+    {
+      "name": "Slagboom, Leandro",
+      "games": 3,
+      "wins": 3,
+      "draws": 0,
+      "losses": 0,
+      "score": 3
+    },
+    {
+      "name": "Jorritsma, Eli Alia",
+      "games": 3,
+      "wins": 2,
+      "draws": 1,
+      "losses": 0,
+      "score": 2.5
+    },
+    {
+      "name": "Anumitra Elangkumaran",
+      "games": 3,
+      "wins": 2,
+      "draws": 1,
+      "losses": 0,
+      "score": 2.5
+    },
+    {
+      "name": "Kumar, Prajit Sai",
+      "games": 3,
+      "wins": 2,
+      "draws": 1,
+      "losses": 0,
+      "score": 2.5
+    },
+    {
+      "name": "Kazarjan, Gachatur",
+      "games": 3,
+      "wins": 2,
+      "draws": 1,
+      "losses": 0,
+      "score": 2.5
+    },
+    {
+      "name": "Madularea, David",
+      "games": 3,
+      "wins": 2,
+      "draws": 1,
+      "losses": 0,
+      "score": 2.5
+    },
+    {
+      "name": "Zhang, Jinchen",
+      "games": 3,
+      "wins": 2,
+      "draws": 1,
+      "losses": 0,
+      "score": 2.5
+    },
+    {
+      "name": "Nitrauw, Peter",
+      "games": 3,
+      "wins": 1,
+      "draws": 2,
+      "losses": 0,
+      "score": 2
+    },
+    {
+      "name": "LÃ©on Niemeijer",
+      "games": 3,
+      "wins": 2,
+      "draws": 0,
+      "losses": 1,
+      "score": 2
+    }
+  ],
+  "sample_games": [
+    {
+      "white": "Ten Dam, Bram",
+      "black": "Gohil, Viaan",
+      "result": "1/2-1/2",
+      "date": "2024.02.11",
+      "round": "?"
+    },
+    {
+      "white": "Hannah Bakker",
+      "black": "Jorritsma, Eli Alia",
+      "result": "0-1",
+      "date": "2024.02.11",
+      "round": "?"
+    },
+    {
+      "white": "Woldhuis, Thera",
+      "black": "Ganeshram, Nirupa",
+      "result": "0-1",
+      "date": "2024.02.11",
+      "round": "?"
+    },
+    {
+      "white": "Mara Madularea",
+      "black": "Bruins, Nena",
+      "result": "0-1",
+      "date": "2024.02.11",
+      "round": "?"
+    },
+    {
+      "white": "Basa, Manasvita",
+      "black": "Frieswijk, Julian",
+      "result": "1/2-1/2",
+      "date": "2024.02.11",
+      "round": "?"
+    }
+  ]
+}

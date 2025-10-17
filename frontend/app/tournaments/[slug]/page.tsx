@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Trophy, Calendar, MapPin, Users, TrendingUp, Award, Clock, Target } from 'lucide-react';
+import { getApiBaseUrl } from '@/lib/config';
 
 interface TournamentData {
   name: string;
@@ -47,8 +48,8 @@ export default function TournamentPage() {
       setLoading(true);
       // Decode the slug to get the tournament name
       const tournamentName = decodeURIComponent(slug.replace(/-/g, ' '));
-      
-      const response = await fetch(`http://localhost:3007/api/tournaments/${encodeURIComponent(tournamentName)}`);
+
+      const response = await fetch(`${getApiBaseUrl()}/api/tournaments/${encodeURIComponent(tournamentName)}`);
       if (!response.ok) {
         throw new Error('Tournament not found');
       }

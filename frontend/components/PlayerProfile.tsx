@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Trophy, Target, TrendingUp, Award, Users, BookOpen, Calendar, Zap, Shield, Swords } from 'lucide-react';
 import { OpponentStats } from '@/components/OpponentStats';
+import { getApiBaseUrl } from '@/lib/config';
 
 interface PlayerProfileProps {
   playerName: string;
@@ -22,7 +23,7 @@ export default function PlayerProfile({ playerName, playerSlug, playerTitle }: P
 
   const fetchPlayerData = async () => {
     try {
-      const response = await fetch(`http://localhost:3007/api/players/${playerSlug}/stats`);
+      const response = await fetch(`${getApiBaseUrl()}/api/players/${playerSlug}/stats`);
       if (response.ok) {
         const result = await response.json();
         setData(result);

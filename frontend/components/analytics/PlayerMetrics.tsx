@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { getApiBaseUrl } from '@/lib/config';
 
 ChartJS.register(
   ArcElement,
@@ -57,7 +58,7 @@ export default function PlayerMetrics({ playerName }: PlayerMetricsProps) {
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:3010/api/analytics/player/${encodeURIComponent(playerName)}/metrics`
+          `${getApiBaseUrl()}/api/analytics/player/${encodeURIComponent(playerName)}/metrics`
         );
         const data = await response.json();
         

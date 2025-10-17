@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { 
-  Trophy, Download, Share2, ChevronLeft, Users, 
+import {
+  Trophy, Download, Share2, ChevronLeft, Users,
   Calendar, MapPin, Clock, Award, TrendingUp,
   Activity, BarChart3, FileText, Grid3x3
 } from 'lucide-react';
 import Link from 'next/link';
+import { getApiBaseUrl } from '@/lib/config';
 
 interface TournamentDetails {
   id: number;
@@ -92,7 +93,7 @@ export default function TournamentDetails() {
 
   const fetchTournamentDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:3010/api/archive/tournaments/${id}`);
+      const response = await fetch(`${getApiBaseUrl()}/api/archive/tournaments/${id}`);
       const data = await response.json();
       setTournament(data);
     } catch (error) {
@@ -102,7 +103,7 @@ export default function TournamentDetails() {
 
   const fetchStandings = async () => {
     try {
-      const response = await fetch(`http://localhost:3010/api/archive/tournaments/${id}/standings`);
+      const response = await fetch(`${getApiBaseUrl()}/api/archive/tournaments/${id}/standings`);
       const data = await response.json();
       setStandings(data);
     } catch (error) {
@@ -112,7 +113,7 @@ export default function TournamentDetails() {
 
   const fetchGames = async () => {
     try {
-      let url = `http://localhost:3010/api/archive/tournaments/${id}/games`;
+      let url = `${getApiBaseUrl()}/api/archive/tournaments/${id}/games`;
       if (selectedRound) {
         url += `?round=${selectedRound}`;
       }
@@ -128,7 +129,7 @@ export default function TournamentDetails() {
 
   const exportData = async (format: 'pgn' | 'csv' | 'json') => {
     try {
-      const response = await fetch(`http://localhost:3010/api/archive/tournaments/${id}/export?format=${format}`);
+      const response = await fetch(`${getApiBaseUrl()}/api/archive/tournaments/${id}/export?format=${format}`);
       if (format === 'json') {
         const data = await response.json();
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });

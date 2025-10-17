@@ -1,0 +1,57 @@
+{
+  "timestamp": "2025-08-29T05:08:38.570Z",
+  "totalGames": 9305113,
+  "totalSizeGB": "7.02",
+  "files": [
+    {
+      "fileName": "LumbrasGigaBase_OTB_1970-1989.pgn",
+      "fileSize": 395186824,
+      "gameCount": 563317
+    },
+    {
+      "fileName": "LumbrasGigaBase_OTB_1990-1999.pgn",
+      "fileSize": 1057305271,
+      "gameCount": 1465222
+    },
+    {
+      "fileName": "LumbrasGigaBase_OTB_2000-2004.pgn",
+      "fileSize": 857899647,
+      "gameCount": 1157545
+    },
+    {
+      "fileName": "LumbrasGigaBase_OTB_2005-2009.pgn",
+      "fileSize": 1104412948,
+      "gameCount": 1468747
+    },
+    {
+      "fileName": "LumbrasGigaBase_OTB_2010-2014.pgn",
+      "fileSize": 1378172383,
+      "gameCount": 1800542
+    },
+    {
+      "fileName": "LumbrasGigaBase_OTB_2015-2019.pgn",
+      "fileSize": 1354185966,
+      "gameCount": 1733719
+    },
+    {
+      "fileName": "LumbrasGigaBase_OTB_2020-2024.pgn",
+      "fileSize": 1203161837,
+      "gameCount": 1010401
+    },
+    {
+      "fileName": "classic_games.pgn",
+      "fileSize": 5967,
+      "gameCount": 8
+    },
+    {
+      "fileName": "lumbrasgigabase_2025.pgn",
+      "fileSize": 189172499,
+      "gameCount": 105600
+    },
+    {
+      "fileName": "world_champions.pgn",
+      "fileSize": 6753,
+      "gameCount": 12
+    }
+  ]
+}

@@ -13,6 +13,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import { getApiBaseUrl } from '@/lib/config';
 
 ChartJS.register(
   CategoryScale,
@@ -55,7 +56,7 @@ export default function RatingProgression({ playerName }: RatingProgressionProps
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:3010/api/analytics/player/${encodeURIComponent(playerName)}/progression?period=${period}`
+          `${getApiBaseUrl()}/api/analytics/player/${encodeURIComponent(playerName)}/progression?period=${period}`
         );
         const data = await response.json();
         

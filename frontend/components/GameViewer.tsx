@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { ChevronLeft, ChevronRight, SkipBack, SkipForward, Play, Pause, X } from 'lucide-react';
+import { getApiBaseUrl } from '@/lib/config';
 
 interface GameViewerProps {
   gameId: string | number;
@@ -62,7 +63,7 @@ export default function GameViewer({ gameId, onClose }: GameViewerProps) {
   const fetchGame = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3007/api/otb/database/game/${gameId}`);
+      const response = await fetch(`${getApiBaseUrl()}/api/otb/database/game/${gameId}`);
       if (!response.ok) throw new Error('Failed to fetch game');
       
       const data = await response.json();

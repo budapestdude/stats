@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Trophy, Search, Filter, Calendar, MapPin, Users, 
+import {
+  Trophy, Search, Filter, Calendar, MapPin, Users,
   TrendingUp, Award, Database, Download, ChevronRight,
   Globe, Clock, Activity, BarChart3
 } from 'lucide-react';
 import Link from 'next/link';
+import { getApiBaseUrl } from '@/lib/config';
 
 interface Tournament {
   id: number;
@@ -64,7 +65,7 @@ export default function TournamentArchive() {
 
   const fetchStatistics = async () => {
     try {
-      const response = await fetch('http://localhost:3010/api/archive/statistics');
+      const response = await fetch(`${getApiBaseUrl()}/api/archive/statistics`);
       const data = await response.json();
       setStatistics(data);
     } catch (error) {
@@ -84,7 +85,7 @@ export default function TournamentArchive() {
         if (value) params.append(key, value);
       });
 
-      const response = await fetch(`http://localhost:3010/api/archive/tournaments/search?${params}`);
+      const response = await fetch(`${getApiBaseUrl()}/api/archive/tournaments/search?${params}`);
       const data = await response.json();
       setTournaments(data.tournaments);
       setTotalResults(data.total);
