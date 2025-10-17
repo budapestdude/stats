@@ -152,10 +152,9 @@ async function downloadChunk(chunkNum, outputPath) {
   });
 }
 
-async function assembleDatabase() {
+async function assembleDatabase(tempDir) {
   console.log('\n🔧 Assembling database from chunks...');
 
-  const tempDir = path.join(VOLUME_PATH, 'temp-chunks');
   const writeStream = fs.createWriteStream(DB_PATH);
 
   for (let i = 1; i <= CHUNK_COUNT; i++) {
@@ -185,12 +184,15 @@ async function assembleDatabase() {
 
 async function main() {
   const overallStart = Date.now();
-  const tempDir = path.join(VOLUME_PATH, 'temp-chunks');
+  // Use /app/tmp for temporary chunks to avoid Railway volume permission issues
+  // Final database will still be written to VOLUME_PATH
+  const tempDir = path.join(__dirname, 'tmp', 'temp-chunks');
 
   try {
     // Create temp directory
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
+      console.log(`   Created temp directory: ${tempDir}`);
     }
 
     // Download all chunks
@@ -200,7 +202,7 @@ async function main() {
     }
 
     // Assemble chunks
-    await assembleDatabase();
+    await assembleDatabase(tempDir);
 
     // Set permissions
     try {
